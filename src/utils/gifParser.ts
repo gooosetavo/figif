@@ -46,7 +46,7 @@ export async function parseGifFile(file: File): Promise<DecodedGif> {
 
   // Calculate metadata
   const totalDuration = gifFrames.reduce((sum, frame) => sum + frame.delay, 0);
-  const loopCount = gif.loop !== undefined ? gif.loop : 0; // 0 = infinite
+  const loopCount = (gif as any).loop !== undefined ? (gif as any).loop : 0; // 0 = infinite
 
   const metadata: GifMetadata = {
     width,

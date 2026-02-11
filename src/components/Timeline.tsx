@@ -34,7 +34,7 @@ export function Timeline({
     });
   }, [currentFrameIndex]);
 
-  const renderThumbnail = (frame: GifFrame, index: number) => {
+  const renderThumbnail = (frame: GifFrame, _index: number) => {
     const canvas = document.createElement('canvas');
     canvas.width = 80;
     canvas.height = 60;
@@ -91,7 +91,7 @@ export function Timeline({
         {frames.map((frame, index) => (
           <div
             key={index}
-            ref={(el) => (thumbnailRefs.current[index] = el)}
+            ref={(el) => { thumbnailRefs.current[index] = el; }}
             className={`timeline-frame ${index === currentFrameIndex ? 'active' : ''}`}
             onClick={() => onFrameSelect(index)}
           >

@@ -27,17 +27,18 @@ export async function generateGif(
     };
   });
 
-  // Configure encoding options
+  // Configure encoding options with frame data
   const encodingOptions = {
     width: frames[0].imageData.width,
     height: frames[0].imageData.height,
     repeat: options.loopCount, // 0 for infinite
     transparent: options.transparent,
     quality: options.quality, // 1-10, higher is better but larger file
+    frames: frameData,
   };
 
   // Encode the GIF
-  const output = await encode(encodingOptions, frameData);
+  const output = await encode(encodingOptions);
 
   // Convert to Blob
   return new Blob([output], { type: 'image/gif' });

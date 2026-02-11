@@ -74,3 +74,20 @@ export interface EditorState {
   stickerOverlays: StickerOverlay[];
   history: DecodedGif[]; // For undo functionality
 }
+
+export type AIModel = 'isnet' | 'isnet_fp16' | 'isnet_quint8';
+export type AIDevice = 'cpu' | 'gpu';
+
+export interface AIBackgroundRemovalConfig {
+  model: AIModel;
+  device: AIDevice;
+  progressCallback?: (stage: string, current: number, total: number) => void;
+}
+
+export interface ModelInfo {
+  name: string;
+  size: string;
+  description: string;
+  performance: 'slow' | 'medium' | 'fast';
+  quality: 'high' | 'medium' | 'low';
+}

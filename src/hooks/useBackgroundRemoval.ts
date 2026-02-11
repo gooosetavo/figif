@@ -1,34 +1,49 @@
 import { useState, useCallback } from 'react';
 import { removeBackgroundAI, magicWandSelect, applyMaskToRemoveBackground, invertMask } from '../utils/backgroundRemoval';
-import type { GifFrame } from '../types/gif.types';
+import type { GifFrame, AIBackgroundRemovalConfig } from '../types/gif.types';
 
 export type RemovalMode = 'ai' | 'manual';
 
 interface UseBackgroundRemovalReturn {
-  removeBackgroundFromFrame: (frame: GifFrame, mode: RemovalMode) => Promise<GifFrame>;
-  removeBackgroundFromFrames: (frames: GifFrame[], mode: RemovalMode, onProgress?: (progress: number) => void) => Promise<GifFrame[]>;
+  removeBackgroundFromFrame: (frame: GifFrame, mode: RemovalMode, config?: AIBackgroundRemovalConfig) => Promise<GifFrame>;
+  removeBackgroundFromFrames: (frames: GifFrame[], mode: RemovalMode, config?: AIBackgroundRemovalConfig, onProgress?: (progress: number) => void) => Promise<GifFrame[]>;
+  previewBackgroundRemoval: (frame: GifFrame, config?: AIBackgroundRemovalConfig) => Promise<ImageData>;
   selectWithMagicWand: (imageData: ImageData, x: number, y: number, tolerance: number) => Uint8ClampedArray;
   applyMask: (frame: GifFrame, mask: Uint8ClampedArray, invert?: boolean) => GifFrame;
   isProcessing: boolean;
+  isGeneratingPreview: boolean;
   progress: number;
   error: string | null;
+  aiProgress: { stage: string; current: number; total: number } | null;
 }
 
 export function useBackgroundRemoval(): UseBackgroundRemovalReturn {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [aiProgress, setAiProgress] = useState<{ stage: string; current: number; total: number } | null>(null);
 
   const removeBackgroundFromFrame = useCallback(
-    async (frame: GifFrame, mode: RemovalMode): Promise<GifFrame> => {
+    async (frame: GifFrame, mode: RemovalMode, config?: AIBackgroundRemovalConfig): Promise<GifFrame> => {
       setIsProcessing(true);
       setError(null);
+      setAiProgress(null);
 
       try {
         let processedImageData: ImageData;
 
         if (mode === 'ai') {
-          processedImageData = await removeBackgroundAI(frame.imageData);
+          // Wrap progress callback to update state
+          const enhancedConfig: AIBackgroundRemovalConfig = {
+            model: config?.model || 'isnet_fp16',
+            device: config?.device || 'cpu',
+            progressCallback: (stage: string, current: number, total: number) => {
+              setAiProgress({ stage, current, total });
+            },
+          };
+
+          processedImageData = await removeBackgroundAI(frame.imageData, enhancedConfig);
         } else {
           // For manual mode, we'll just return the frame as-is
           // The actual processing happens when user clicks
@@ -58,6 +73,36 @@ export function useBackgroundRemoval(): UseBackgroundRemovalReturn {
         throw new Error(errorMessage);
       } finally {
         setIsProcessing(false);
+        setAiProgress(null);
+      }
+    },
+    []
+  );
+
+  const previewBackgroundRemoval = useCallback(
+    async (frame: GifFrame, config?: AIBackgroundRemovalConfig): Promise<ImageData> => {
+      setIsGeneratingPreview(true);
+      setError(null);
+      setAiProgress(null);
+
+      try {
+        const enhancedConfig: AIBackgroundRemovalConfig = {
+          model: config?.model || 'isnet_fp16',
+          device: config?.device || 'cpu',
+          progressCallback: (stage: string, current: number, total: number) => {
+            setAiProgress({ stage, current, total });
+          },
+        };
+
+        const processedImageData = await removeBackgroundAI(frame.imageData, enhancedConfig);
+        return processedImageData;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to generate preview';
+        setError(errorMessage);
+        throw new Error(errorMessage);
+      } finally {
+        setIsGeneratingPreview(false);
+        setAiProgress(null);
       }
     },
     []
@@ -67,6 +112,7 @@ export function useBackgroundRemoval(): UseBackgroundRemovalReturn {
     async (
       frames: GifFrame[],
       mode: RemovalMode,
+      config?: AIBackgroundRemovalConfig,
       onProgress?: (progress: number) => void
     ): Promise<GifFrame[]> => {
       setIsProcessing(true);
@@ -78,7 +124,7 @@ export function useBackgroundRemoval(): UseBackgroundRemovalReturn {
 
         for (let i = 0; i < frames.length; i++) {
           const frame = frames[i];
-          const processedFrame = await removeBackgroundFromFrame(frame, mode);
+          const processedFrame = await removeBackgroundFromFrame(frame, mode, config);
           processedFrames.push(processedFrame);
 
           const currentProgress = Math.round(((i + 1) / frames.length) * 100);
@@ -134,10 +180,13 @@ export function useBackgroundRemoval(): UseBackgroundRemovalReturn {
   return {
     removeBackgroundFromFrame,
     removeBackgroundFromFrames,
+    previewBackgroundRemoval,
     selectWithMagicWand,
     applyMask,
     isProcessing,
+    isGeneratingPreview,
     progress,
     error,
+    aiProgress,
   };
 }

@@ -3,10 +3,12 @@ import { FileUpload } from './components/FileUpload';
 import { CanvasEditor } from './components/CanvasEditor';
 import { Timeline } from './components/Timeline';
 import { BackgroundRemovalPanel } from './components/Panels/BackgroundRemovalPanel';
+import { PreviewModal } from './components/PreviewModal';
 import { useGifDecoder } from './hooks/useGifDecoder';
 import { useGifEncoder } from './hooks/useGifEncoder';
 import { useFrameManager } from './hooks/useFrameManager';
 import { useBackgroundRemoval, type RemovalMode } from './hooks/useBackgroundRemoval';
+import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
 function App() {
@@ -14,6 +16,11 @@ function App() {
   const [isManualSelectionMode, setIsManualSelectionMode] = useState(false);
   const [selectionMask, setSelectionMask] = useState<Uint8ClampedArray | null>(null);
   const [showBackgroundRemoval, setShowBackgroundRemoval] = useState(false);
+
+  // Preview state
+  const [previewImageData, setPreviewImageData] = useState<ImageData | null>(null);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [pendingConfig, setPendingConfig] = useState<AIBackgroundRemovalConfig | null>(null);
 
   const { decodeGif, isDecoding, error: decodeError } = useGifDecoder();
   const { downloadGif, isEncoding, progress } = useGifEncoder();
@@ -36,10 +43,13 @@ function App() {
   const {
     removeBackgroundFromFrame,
     removeBackgroundFromFrames,
+    previewBackgroundRemoval,
     selectWithMagicWand,
     applyMask,
     isProcessing: isBgProcessing,
+    isGeneratingPreview,
     progress: bgProgress,
+    aiProgress,
   } = useBackgroundRemoval();
 
   const handleFileSelect = async (file: File) => {
@@ -74,25 +84,78 @@ function App() {
     updateAllFrameDelays(newDelay);
   };
 
-  const handleRemoveBackground = async (mode: RemovalMode, target: 'current' | 'all') => {
+  const handleRemoveBackground = async (
+    mode: RemovalMode,
+    target: 'current' | 'all',
+    config?: AIBackgroundRemovalConfig
+  ) => {
     if (frames.length === 0) return;
 
     try {
       if (target === 'current') {
-        const processedFrame = await removeBackgroundFromFrame(frames[currentFrameIndex], mode);
+        const processedFrame = await removeBackgroundFromFrame(
+          frames[currentFrameIndex],
+          mode,
+          config
+        );
         const newFrames = [...frames];
         newFrames[currentFrameIndex] = processedFrame;
         setFrames(newFrames);
       } else {
-        const processedFrames = await removeBackgroundFromFrames(frames, mode, (progress) => {
-          console.log(`Processing: ${progress}%`);
-        });
+        const processedFrames = await removeBackgroundFromFrames(
+          frames,
+          mode,
+          config,
+          (progress) => {
+            console.log(`Processing: ${progress}%`);
+          }
+        );
         setFrames(processedFrames);
       }
       setSelectionMask(null);
     } catch (err) {
       console.error('Failed to remove background:', err);
     }
+  };
+
+  const handlePreview = async (config: AIBackgroundRemovalConfig) => {
+    if (!frames[currentFrameIndex]) return;
+
+    try {
+      const preview = await previewBackgroundRemoval(frames[currentFrameIndex], config);
+      setPreviewImageData(preview);
+      setPendingConfig(config);
+      setShowPreviewModal(true);
+    } catch (err) {
+      console.error('Failed to generate preview:', err);
+    }
+  };
+
+  const handleApplyPreview = async () => {
+    if (!previewImageData || !pendingConfig) return;
+
+    try {
+      const processedFrame = await removeBackgroundFromFrame(
+        frames[currentFrameIndex],
+        'ai',
+        pendingConfig
+      );
+      const newFrames = [...frames];
+      newFrames[currentFrameIndex] = processedFrame;
+      setFrames(newFrames);
+
+      setShowPreviewModal(false);
+      setPreviewImageData(null);
+      setPendingConfig(null);
+    } catch (err) {
+      console.error('Failed to apply preview:', err);
+    }
+  };
+
+  const handleCancelPreview = () => {
+    setShowPreviewModal(false);
+    setPreviewImageData(null);
+    setPendingConfig(null);
   };
 
   const handleEnableManualMode = () => {
@@ -107,7 +170,7 @@ function App() {
     setSelectionMask(mask);
   };
 
-  const handleApplySelection = (tolerance: number, invert: boolean) => {
+  const handleApplySelection = (_tolerance: number, invert: boolean) => {
     if (!selectionMask || !frames[currentFrameIndex]) return;
 
     try {
@@ -186,9 +249,13 @@ function App() {
                     onRemoveBackground={handleRemoveBackground}
                     onEnableManualMode={handleEnableManualMode}
                     onApplySelection={handleApplySelection}
+                    onPreview={handlePreview}
                     isProcessing={isBgProcessing}
                     progress={bgProgress}
                     isManualMode={isManualSelectionMode}
+                    isGeneratingPreview={isGeneratingPreview}
+                    aiProgress={aiProgress}
+                    currentFrame={currentFrame}
                   />
                 </div>
               )}
@@ -231,6 +298,17 @@ function App() {
             />
           </main>
         </div>
+      )}
+
+      {/* Preview Modal */}
+      {showPreviewModal && previewImageData && currentFrame && (
+        <PreviewModal
+          originalFrame={currentFrame}
+          previewImageData={previewImageData}
+          onApply={handleApplyPreview}
+          onCancel={handleCancelPreview}
+          isOpen={showPreviewModal}
+        />
       )}
 
       <footer className="app-footer">

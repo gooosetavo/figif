@@ -1,10 +1,14 @@
 import { removeBackground } from '@imgly/background-removal';
+import type { AIBackgroundRemovalConfig, ModelInfo, AIModel } from '../types/gif.types';
 
 /**
  * AI-powered background removal using ML model
  * Processes a single frame and returns the result with transparent background
  */
-export async function removeBackgroundAI(imageData: ImageData): Promise<ImageData> {
+export async function removeBackgroundAI(
+  imageData: ImageData,
+  config?: AIBackgroundRemovalConfig
+): Promise<ImageData> {
   // Create a temporary canvas with the image data
   const canvas = document.createElement('canvas');
   canvas.width = imageData.width;
@@ -25,8 +29,15 @@ export async function removeBackgroundAI(imageData: ImageData): Promise<ImageDat
     });
   });
 
-  // Remove background using AI
-  const result = await removeBackground(blob);
+  // Build config for removeBackground library
+  const removeBackgroundConfig = {
+    model: config?.model || 'isnet_fp16',
+    device: config?.device || 'cpu',
+    progress: config?.progressCallback,
+  };
+
+  // Remove background using AI with config
+  const result = await removeBackground(blob, removeBackgroundConfig);
 
   // Convert result back to ImageData
   const resultImage = new Image();
@@ -196,4 +207,35 @@ export function expandMask(
   }
 
   return result;
+}
+
+/**
+ * Get information about a specific AI model
+ */
+export function getModelInfo(model: AIModel): ModelInfo {
+  const modelInfoMap: Record<AIModel, ModelInfo> = {
+    isnet: {
+      name: 'ISNet (Full Precision)',
+      size: '~170 MB',
+      description: 'Highest quality, best for detailed subjects',
+      performance: 'slow',
+      quality: 'high',
+    },
+    isnet_fp16: {
+      name: 'ISNet FP16 (Half Precision)',
+      size: '~85 MB',
+      description: 'Balanced quality and speed',
+      performance: 'medium',
+      quality: 'medium',
+    },
+    isnet_quint8: {
+      name: 'ISNet Quantized (8-bit)',
+      size: '~43 MB',
+      description: 'Fastest processing, lower quality',
+      performance: 'fast',
+      quality: 'low',
+    },
+  };
+
+  return modelInfoMap[model];
 }
