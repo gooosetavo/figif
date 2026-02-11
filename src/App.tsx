@@ -20,7 +20,6 @@ function App() {
   // Preview state
   const [previewImageData, setPreviewImageData] = useState<ImageData | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [pendingConfig, setPendingConfig] = useState<AIBackgroundRemovalConfig | null>(null);
 
   const { decodeGif, isDecoding, error: decodeError } = useGifDecoder();
   const { downloadGif, isEncoding, progress } = useGifEncoder();
@@ -124,29 +123,40 @@ function App() {
     try {
       const preview = await previewBackgroundRemoval(frames[currentFrameIndex], config);
       setPreviewImageData(preview);
-      setPendingConfig(config);
       setShowPreviewModal(true);
     } catch (err) {
       console.error('Failed to generate preview:', err);
     }
   };
 
-  const handleApplyPreview = async () => {
-    if (!previewImageData || !pendingConfig) return;
+  const handleApplyPreview = () => {
+    if (!previewImageData || !frames[currentFrameIndex]) return;
 
     try {
-      const processedFrame = await removeBackgroundFromFrame(
-        frames[currentFrameIndex],
-        'ai',
-        pendingConfig
-      );
+      // Create a new frame with the preview image data
+      const canvas = document.createElement('canvas');
+      canvas.width = previewImageData.width;
+      canvas.height = previewImageData.height;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        throw new Error('Could not get canvas context');
+      }
+
+      ctx.putImageData(previewImageData, 0, 0);
+
+      const processedFrame = {
+        ...frames[currentFrameIndex],
+        imageData: previewImageData,
+        canvas,
+      };
+
       const newFrames = [...frames];
       newFrames[currentFrameIndex] = processedFrame;
       setFrames(newFrames);
 
       setShowPreviewModal(false);
       setPreviewImageData(null);
-      setPendingConfig(null);
     } catch (err) {
       console.error('Failed to apply preview:', err);
     }
@@ -155,7 +165,6 @@ function App() {
   const handleCancelPreview = () => {
     setShowPreviewModal(false);
     setPreviewImageData(null);
-    setPendingConfig(null);
   };
 
   const handleEnableManualMode = () => {
