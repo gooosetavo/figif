@@ -6,7 +6,7 @@ export const useEditorState = () => {
   const [isManualSelectionMode, setIsManualSelectionMode] = useState(false);
   const [selectionMask, setSelectionMask] = useState<Uint8ClampedArray | null>(null);
   const [selectionPoints, setSelectionPoints] = useState<Array<{ x: number; y: number; tolerance: number }>>([]);
-  const [manualTolerance, setManualTolerance] = useState(50);
+  const [manualTolerance, setManualTolerance] = useState(5);
   const [showBackgroundRemoval, setShowBackgroundRemoval] = useState(false);
   const [showResize, setShowResize] = useState(false);
   const [showCrop, setShowCrop] = useState(false);

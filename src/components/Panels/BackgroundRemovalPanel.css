@@ -12,8 +12,8 @@
 
 .mode-button {
   padding: 10px;
-  border: 2px solid #e2e8f0;
-  background: white;
+  border: 2px solid var(--border-color);
+  background: var(--bg-secondary);
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
@@ -38,7 +38,7 @@
 
 .mode-description {
   font-size: 13px;
-  color: #718096;
+  color: var(--text-tertiary);
   margin: 0;
   line-height: 1.5;
 }
@@ -81,7 +81,7 @@
 .progress-bar {
   width: 100%;
   height: 8px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -109,7 +109,7 @@
 
 .control-item label {
   font-size: 14px;
-  color: #2d3748;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -117,7 +117,7 @@
   width: 100%;
   height: 6px;
   border-radius: 3px;
-  background: #e2e8f0;
+  background: var(--bg-tertiary);
   outline: none;
   margin-top: 8px;
 }
@@ -155,7 +155,7 @@
 }
 
 .manual-instructions {
-  background: #edf2f7;
+  background: var(--bg-tertiary);
   padding: 12px;
   border-radius: 6px;
   border-left: 3px solid #667eea;
@@ -164,7 +164,7 @@
 .manual-instructions p {
   margin: 0;
   font-size: 13px;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 /* AI Configuration Styles */
@@ -173,18 +173,19 @@
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  background: #f7fafc;
+  background: var(--bg-tertiary);
   border-radius: 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .model-select,
 .device-select {
   width: 100%;
   padding: 8px 12px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--border-color);
   border-radius: 6px;
-  background: white;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   font-size: 14px;
   cursor: pointer;
   transition: border-color 0.2s;
@@ -202,7 +203,6 @@
 }
 
 .info-button {
-  margin-left: 8px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -213,6 +213,11 @@
   font-size: 12px;
   font-weight: bold;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .info-button:hover {
@@ -221,7 +226,7 @@
 }
 
 .model-info-box {
-  background: white;
+  background: var(--bg-secondary);
   border: 2px solid #667eea;
   border-radius: 8px;
   padding: 12px;
@@ -230,7 +235,7 @@
 
 .model-info-box h4 {
   margin: 0 0 8px 0;
-  color: #2d3748;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
@@ -243,16 +248,16 @@
 
 .model-stat {
   font-size: 12px;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .model-stat strong {
-  color: #2d3748;
+  color: var(--text-primary);
 }
 
 .model-description {
   font-size: 13px;
-  color: #718096;
+  color: var(--text-tertiary);
   margin: 8px 0 0 0;
   line-height: 1.4;
 }
@@ -266,7 +271,7 @@
 }
 
 .ai-progress-info {
-  background: #edf2f7;
+  background: var(--bg-tertiary);
   padding: 12px;
   border-radius: 6px;
   border-left: 3px solid #667eea;
@@ -274,7 +279,7 @@
 
 .progress-stage {
   font-size: 13px;
-  color: #4a5568;
+  color: var(--text-secondary);
   margin: 0 0 8px 0;
   font-weight: 500;
 }

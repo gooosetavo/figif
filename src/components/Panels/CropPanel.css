@@ -7,21 +7,21 @@
 .crop-info {
   text-align: center;
   padding: 16px;
-  background: #f7fafc;
+  background: var(--bg-tertiary);
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .crop-info p {
   margin: 0 0 8px 0;
   font-size: 13px;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .crop-current-size {
   font-size: 12px;
   font-weight: 600;
-  color: #718096;
+  color: var(--text-tertiary);
 }
 
 .crop-start-button {
@@ -49,7 +49,7 @@
 
 .crop-selection-info {
   padding: 12px;
-  background: #f0f4ff;
+  background: var(--bg-tertiary);
   border-radius: 6px;
   border: 1px solid #667eea;
 }
@@ -72,7 +72,7 @@
 .crop-coords div {
   font-size: 12px;
   font-weight: 500;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .crop-inputs {
@@ -96,17 +96,17 @@
 .crop-input-group label {
   font-size: 12px;
   font-weight: 500;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .crop-input-group input[type="number"] {
   padding: 8px 12px;
-  border: 1px solid #cbd5e0;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #2d3748;
-  background: white;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
   transition: all 0.2s ease;
 }
 
@@ -117,7 +117,7 @@
 }
 
 .crop-input-group input[type="number"]:disabled {
-  background: #f7fafc;
+  background: var(--bg-tertiary);
   cursor: not-allowed;
 }
 
@@ -135,18 +135,18 @@
 
 .crop-preset-buttons button {
   padding: 8px 12px;
-  background: white;
-  border: 1px solid #cbd5e0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #4a5568;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .crop-preset-buttons button:hover:not(:disabled) {
-  background: #f7fafc;
+  background: var(--bg-tertiary);
   border-color: #667eea;
   color: #667eea;
 }
@@ -174,14 +174,14 @@
 }
 
 .crop-cancel-button {
-  background: white;
-  border: 1px solid #cbd5e0;
-  color: #4a5568;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
 }
 
 .crop-cancel-button:hover:not(:disabled) {
-  background: #f7fafc;
-  border-color: #a0aec0;
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
 }
 
 .crop-apply-button {

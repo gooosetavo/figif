@@ -6,15 +6,15 @@
 
 .resize-current {
   padding: 12px;
-  background: #f7fafc;
+  background: var(--bg-tertiary);
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .resize-label {
   font-size: 11px;
   font-weight: 600;
-  color: #718096;
+  color: var(--text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -23,7 +23,7 @@
 .resize-value {
   font-size: 14px;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text-primary);
 }
 
 .resize-inputs {
@@ -41,17 +41,17 @@
 .resize-input-group label {
   font-size: 12px;
   font-weight: 500;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .resize-input-group input[type="number"] {
   padding: 8px 12px;
-  border: 1px solid #cbd5e0;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #2d3748;
-  background: white;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
   transition: all 0.2s ease;
 }
 
@@ -62,7 +62,7 @@
 }
 
 .resize-input-group input[type="number"]:disabled {
-  background: #f7fafc;
+  background: var(--bg-tertiary);
   cursor: not-allowed;
 }
 
@@ -78,7 +78,7 @@
   gap: 8px;
   cursor: pointer;
   font-size: 13px;
-  color: #4a5568;
+  color: var(--text-secondary);
   user-select: none;
 }
 
@@ -102,18 +102,18 @@
 
 .resize-preset-buttons button {
   padding: 8px 12px;
-  background: white;
-  border: 1px solid #cbd5e0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: #4a5568;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .resize-preset-buttons button:hover:not(:disabled) {
-  background: #f7fafc;
+  background: var(--bg-tertiary);
   border-color: #667eea;
   color: #667eea;
 }
