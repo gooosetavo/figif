@@ -1,11 +1,11 @@
 .file-upload {
-  border: 3px dashed #cbd5e0;
+  border: 3px dashed var(--border-color);
   border-radius: 12px;
   padding: 60px 40px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background-color: #f7fafc;
+  background-color: var(--bg-tertiary);
   min-height: 300px;
   display: flex;
   align-items: center;
@@ -14,18 +14,18 @@
 
 .file-upload:hover {
   border-color: #667eea;
-  background-color: #edf2f7;
+  background-color: var(--bg-secondary);
 }
 
 .file-upload.dragging {
   border-color: #667eea;
-  background-color: #e6f2ff;
+  background-color: var(--bg-tertiary);
   transform: scale(1.02);
 }
 
 .file-upload.loading {
   cursor: default;
-  border-color: #cbd5e0;
+  border-color: var(--border-color);
 }
 
 .file-upload-content {
@@ -54,11 +54,11 @@
 
 .file-upload .file-info {
   font-size: 14px;
-  color: #a0aec0;
+  color: var(--text-tertiary);
 }
 
 .loading-spinner {
-  border: 4px solid #e2e8f0;
+  border: 4px solid var(--border-color);
   border-top-color: #667eea;
   border-radius: 50%;
   width: 48px;
