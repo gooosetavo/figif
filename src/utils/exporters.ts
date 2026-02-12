@@ -7,6 +7,11 @@ import type { ExportOptions } from '../components/ExportModal';
 export const exportAsPNG = async (frame: GifFrame, filename: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
+      if (!frame.canvas) {
+        reject(new Error('Frame canvas is not available'));
+        return;
+      }
+
       frame.canvas.toBlob((blob) => {
         if (!blob) {
           reject(new Error('Failed to create PNG blob'));
@@ -34,7 +39,7 @@ export const exportAsPNG = async (frame: GifFrame, filename: string): Promise<vo
 export const exportAsAPNG = async (
   frames: GifFrame[],
   filename: string,
-  options: ExportOptions,
+  _options: ExportOptions,
   onProgress?: (progress: number) => void
 ): Promise<void> => {
   // For now, we'll fall back to exporting as a zip of PNGs
@@ -61,7 +66,7 @@ export const exportAsAPNG = async (
 export const exportAsWebP = async (
   frames: GifFrame[],
   filename: string,
-  options: ExportOptions,
+  _options: ExportOptions,
   onProgress?: (progress: number) => void
 ): Promise<void> => {
   // WebP encoding is not natively supported in canvas

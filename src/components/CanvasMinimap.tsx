@@ -47,7 +47,9 @@ export const CanvasMinimap = ({
 
     // Draw the miniaturized image
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(frame.canvas, 0, 0, canvas.width, canvas.height);
+    if (frame.canvas) {
+      ctx.drawImage(frame.canvas, 0, 0, canvas.width, canvas.height);
+    }
 
     // Draw viewport rectangle
     const viewportRect = {
