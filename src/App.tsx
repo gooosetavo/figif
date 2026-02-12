@@ -511,6 +511,9 @@ function App() {
           onCreateWorkspace={async () => {
             await workspaceManager.createWorkspace(`Workspace ${workspaceManager.workspaces.length + 1}`);
           }}
+          isCreatingWorkspace={workspaceManager.isCreatingWorkspace}
+          isSwitchingWorkspace={workspaceManager.isSwitchingWorkspace}
+          isClosingWorkspace={workspaceManager.isClosingWorkspace}
         />
       )}
 

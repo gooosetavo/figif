@@ -11,6 +11,9 @@ interface WorkspaceTabsProps {
   onSwitchWorkspace: (id: string) => void;
   onCloseWorkspace: (id: string) => void;
   onCreateWorkspace: () => void;
+  isCreatingWorkspace?: boolean;
+  isSwitchingWorkspace?: boolean;
+  isClosingWorkspace?: boolean;
 }
 
 export function WorkspaceTabs({
@@ -19,11 +22,16 @@ export function WorkspaceTabs({
   onSwitchWorkspace,
   onCloseWorkspace,
   onCreateWorkspace,
+  isCreatingWorkspace = false,
+  isSwitchingWorkspace = false,
+  isClosingWorkspace = false,
 }: WorkspaceTabsProps) {
   const handleCloseClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation(); // Prevent tab switch when clicking close
     onCloseWorkspace(id);
   };
+
+  const isAnyOperation = isCreatingWorkspace || isSwitchingWorkspace || isClosingWorkspace;
 
   return (
     <div className="workspace-tabs">
@@ -31,8 +39,9 @@ export function WorkspaceTabs({
         {workspaces.map((workspace) => (
           <div
             key={workspace.id}
-            className={`workspace-tab ${activeWorkspaceId === workspace.id ? 'active' : ''}`}
-            onClick={() => onSwitchWorkspace(workspace.id)}
+            className={`workspace-tab ${activeWorkspaceId === workspace.id ? 'active' : ''} ${isAnyOperation ? 'loading' : ''}`}
+            onClick={() => !isAnyOperation && onSwitchWorkspace(workspace.id)}
+            style={{ cursor: isAnyOperation ? 'wait' : 'pointer' }}
           >
             {workspace.thumbnail && (
               <img
@@ -51,8 +60,9 @@ export function WorkspaceTabs({
               className="workspace-tab-close"
               onClick={(e) => handleCloseClick(e, workspace.id)}
               aria-label="Close workspace"
+              disabled={isAnyOperation}
             >
-              ×
+              {isClosingWorkspace ? '⏳' : '×'}
             </button>
           </div>
         ))}
@@ -60,8 +70,9 @@ export function WorkspaceTabs({
           className="workspace-tab-new"
           onClick={onCreateWorkspace}
           aria-label="New workspace"
+          disabled={isAnyOperation}
         >
-          + New
+          {isCreatingWorkspace ? '⏳ Creating...' : '+ New'}
         </button>
       </div>
     </div>

@@ -42,8 +42,13 @@
   position: relative;
 }
 
-.workspace-tab:hover {
+.workspace-tab:hover:not(.loading) {
   background: #edf2f7;
+}
+
+.workspace-tab.loading {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 .workspace-tab.active {
@@ -112,9 +117,14 @@
   transition: all 0.2s ease;
 }
 
-.workspace-tab-close:hover {
+.workspace-tab-close:hover:not(:disabled) {
   background: rgba(0, 0, 0, 0.1);
   color: #e53e3e;
+}
+
+.workspace-tab-close:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 .workspace-tab-new {
@@ -131,9 +141,14 @@
   white-space: nowrap;
 }
 
-.workspace-tab-new:hover {
+.workspace-tab-new:hover:not(:disabled) {
   background: #edf2f7;
   border-color: #667eea;
+}
+
+.workspace-tab-new:disabled {
+  cursor: wait;
+  opacity: 0.6;
 }
 
 /* Responsive adjustments */

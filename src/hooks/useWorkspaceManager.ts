@@ -37,6 +37,9 @@ export interface UseWorkspaceManagerReturn {
   activeWorkspace: Workspace | null;
   activeWorkspaceId: string | null;
   isLoading: boolean;
+  isCreatingWorkspace: boolean;
+  isSwitchingWorkspace: boolean;
+  isClosingWorkspace: boolean;
 
   // Workspace CRUD
   createWorkspace(name: string, gif?: DecodedGif): Promise<string>;
@@ -64,6 +67,9 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
   const [workspaces, setWorkspaces] = useState<WorkspaceMetadata[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+  const [isSwitchingWorkspace, setIsSwitchingWorkspace] = useState(false);
+  const [isClosingWorkspace, setIsClosingWorkspace] = useState(false);
   const [saveTimeout, setSaveTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   // Check storage availability
@@ -107,43 +113,48 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
         throw new Error('Storage not available');
       }
 
-      const id = `workspace-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const now = Date.now();
+      setIsCreatingWorkspace(true);
+      try {
+        const id = `workspace-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const now = Date.now();
 
-      let frames: SerializedFrame[] = [];
-      let thumbnail: string | undefined;
+        let frames: SerializedFrame[] = [];
+        let thumbnail: string | undefined;
 
-      if (gif) {
-        frames = serializeFrames(gif.frames);
-        thumbnail = generateThumbnail(gif.frames[0]);
+        if (gif) {
+          frames = serializeFrames(gif.frames);
+          thumbnail = generateThumbnail(gif.frames[0]);
+        }
+
+        const workspace: Workspace = {
+          id,
+          name,
+          createdAt: now,
+          lastModified: now,
+          currentFrames: frames,
+          currentFrameIndex: 0,
+          historyStack: [],
+          currentHistoryIndex: -1,
+        };
+
+        const metadata: WorkspaceMetadata = {
+          id,
+          name,
+          lastModified: now,
+          thumbnail,
+          frameCount: frames.length,
+        };
+
+        await saveWorkspaceDB(workspace);
+        addWorkspaceToIndex(metadata);
+
+        setWorkspaces((prev) => [...prev, metadata]);
+        setActiveWorkspace(workspace);
+
+        return id;
+      } finally {
+        setIsCreatingWorkspace(false);
       }
-
-      const workspace: Workspace = {
-        id,
-        name,
-        createdAt: now,
-        lastModified: now,
-        currentFrames: frames,
-        currentFrameIndex: 0,
-        historyStack: [],
-        currentHistoryIndex: -1,
-      };
-
-      const metadata: WorkspaceMetadata = {
-        id,
-        name,
-        lastModified: now,
-        thumbnail,
-        frameCount: frames.length,
-      };
-
-      await saveWorkspaceDB(workspace);
-      addWorkspaceToIndex(metadata);
-
-      setWorkspaces((prev) => [...prev, metadata]);
-      setActiveWorkspace(workspace);
-
-      return id;
     },
     [storageAvailable]
   );
@@ -153,6 +164,7 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
     async (id: string): Promise<void> => {
       if (!storageAvailable) return;
 
+      setIsSwitchingWorkspace(true);
       try {
         const workspace = await loadWorkspaceDB(id);
         if (workspace) {
@@ -161,6 +173,8 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
         }
       } catch (error) {
         console.error('Failed to switch workspace:', error);
+      } finally {
+        setIsSwitchingWorkspace(false);
       }
     },
     [storageAvailable]
@@ -171,6 +185,7 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
     async (id: string): Promise<void> => {
       if (!storageAvailable) return;
 
+      setIsClosingWorkspace(true);
       try {
         await deleteWorkspaceDB(id);
         removeWorkspaceFromIndex(id);
@@ -187,6 +202,8 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
         }
       } catch (error) {
         console.error('Failed to close workspace:', error);
+      } finally {
+        setIsClosingWorkspace(false);
       }
     },
     [storageAvailable, activeWorkspace, workspaces, switchWorkspace]
@@ -421,6 +438,9 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
     activeWorkspace,
     activeWorkspaceId: activeWorkspace?.id || null,
     isLoading,
+    isCreatingWorkspace,
+    isSwitchingWorkspace,
+    isClosingWorkspace,
     createWorkspace,
     switchWorkspace,
     closeWorkspace,
