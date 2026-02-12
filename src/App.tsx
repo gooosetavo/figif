@@ -89,6 +89,14 @@ function App() {
     } else if (workspaceManager.activeWorkspace && workspaceManager.activeWorkspace.currentFrames.length === 0) {
       setFrames([]);
       setCurrentFrameIndex(0);
+    } else if (!workspaceManager.activeWorkspace) {
+      // No active workspace - clear everything
+      setFrames([]);
+      setCurrentFrameIndex(0);
+      setSelectedFrames(new Set());
+      setSelectionMask(null);
+      setSelectionPoints([]);
+      setIsManualSelectionMode(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceManager.activeWorkspace?.id]);
@@ -841,6 +849,7 @@ function App() {
   };
 
   // Resize handler
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleResize = async (width: number, height: number, _maintainAspectRatio: boolean) => {
     if (frames.length === 0) return;
 
@@ -907,10 +916,13 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>🎨 FIGIF - Image & GIF Editor</h1>
-        <p>Edit GIFs and images in your browser - no upload required</p>
-      </header>
+      {/* Header - shows when no workspaces */}
+      {workspaceManager.workspaces.length === 0 && (
+        <header className="app-header">
+          <h1>🎨 FIGIF - Image & GIF Editor</h1>
+          <p>Edit GIFs and images in your browser - no upload required</p>
+        </header>
+      )}
 
       {/* Workspace Tabs */}
       {workspaceManager.workspaces.length > 0 && (
@@ -928,7 +940,21 @@ function App() {
         />
       )}
 
-      {frames.length === 0 && !workspaceManager.isLoading ? (
+      {/* Toolbar - shows when workspaces exist */}
+      {workspaceManager.workspaces.length > 0 && frames.length > 0 && (
+        <div className="toolbar">
+          <div className="toolbar-content">
+            <button onClick={handleExport} disabled={isEncoding} className="toolbar-button export-button">
+              {isEncoding ? `Exporting... ${progress}%` : '💾 Download GIF'}
+            </button>
+            <button onClick={() => window.location.reload()} className="toolbar-button">
+              📂 Load New Image
+            </button>
+          </div>
+        </div>
+      )}
+
+      {(frames.length === 0 || workspaceManager.workspaces.length === 0) && !workspaceManager.isLoading ? (
         <div className="upload-container">
           <FileUpload
             onFileSelect={handleFileSelect}
@@ -1336,21 +1362,6 @@ function App() {
               )}
             </div>
 
-            <div className="control-section">
-              <h3>Export</h3>
-              <div className="control-group">
-                <button onClick={handleExport} disabled={isEncoding} className="export-button">
-                  {isEncoding ? `Exporting... ${progress}%` : 'Download GIF'}
-                </button>
-              </div>
-            </div>
-
-            <div className="control-section">
-              <h3>File</h3>
-              <div className="control-group">
-                <button onClick={() => window.location.reload()}>Load New GIF</button>
-              </div>
-            </div>
           </aside>
 
           <main className="main-content">

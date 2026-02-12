@@ -26,6 +26,61 @@
   font-size: 16px;
 }
 
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.toolbar-content {
+  display: flex;
+  gap: 12px;
+  padding: 12px 20px;
+  align-items: center;
+}
+
+.toolbar-button {
+  padding: 10px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolbar-button:hover:not(:disabled) {
+  background: #5568d3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.toolbar-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.toolbar-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.toolbar-button.export-button {
+  background: #48bb78;
+}
+
+.toolbar-button.export-button:hover:not(:disabled) {
+  background: #38a169;
+  box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
+}
+
 .upload-container {
   flex: 1;
   display: flex;
