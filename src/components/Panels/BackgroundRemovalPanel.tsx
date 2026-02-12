@@ -91,12 +91,13 @@ export function BackgroundRemovalPanel({
           {/* AI Model Configuration */}
           <div className="ai-config-section">
             <div className="control-item">
-              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                <label style={{ margin: 0, flex: 1 }}>Model Quality</label>
+              <div className="control-header">
+                <label>Model Quality</label>
                 <button
                   className="info-button"
                   onClick={() => setShowModelInfo(!showModelInfo)}
                   type="button"
+                  aria-label="Show model information"
                 >
                   ?
                 </button>

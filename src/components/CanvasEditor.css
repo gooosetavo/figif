@@ -39,6 +39,7 @@
   transition: transform 0.1s ease-out;
   transform-origin: center;
   position: relative;
+  will-change: transform;
 }
 
 .canvas-container canvas:not(.overlay-canvas) {

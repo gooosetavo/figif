@@ -24,12 +24,11 @@ export const CanvasMinimap = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  // Don't show minimap if not zoomed in or no frame
-  if (zoom <= 1 || !frame) return null;
-
   const MINIMAP_SIZE = 150;
 
   useEffect(() => {
+    // Don't render if not zoomed in or no frame
+    if (zoom <= 1 || !frame) return;
     const canvas = canvasRef.current;
     if (!canvas || !frame) return;
 
@@ -111,6 +110,9 @@ export const CanvasMinimap = ({
   const handleMouseUp = () => {
     setIsDragging(false);
   };
+
+  // Don't show minimap if not zoomed in or no frame
+  if (zoom <= 1 || !frame) return null;
 
   return (
     <div className="canvas-minimap-container">
