@@ -1136,7 +1136,7 @@ function App() {
                   onClick={() => setShowBackgroundRemoval(!showBackgroundRemoval)}
                   className={showBackgroundRemoval ? 'active-toggle' : ''}
                 >
-                  {showBackgroundRemoval ? 'Hide' : 'Enable'} Background Selection
+                  {showBackgroundRemoval ? 'Hide' : 'Show'} Background Selection
                 </button>
               </div>
               {showBackgroundRemoval && (

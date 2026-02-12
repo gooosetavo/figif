@@ -23,7 +23,7 @@ export const PaddingControls = ({ framesCount, onApplyPadding }: PaddingControls
 
   return (
     <div className="control-section">
-      <h3>Add Padding</h3>
+      <h3>Padding</h3>
       <div className="control-group">
         <button
           onClick={() => setShowPadding(!showPadding)}

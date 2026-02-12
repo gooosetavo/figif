@@ -17,7 +17,7 @@ export const TransformControls = ({
 
   return (
     <div className="control-section">
-      <h3>Rotate & Flip</h3>
+      <h3>Transform</h3>
       <div className="control-group">
         <button
           onClick={() => setShowTransform(!showTransform)}
