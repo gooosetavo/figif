@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { CanvasEditor } from './components/CanvasEditor';
 import { Timeline } from './components/Timeline';
@@ -7,6 +7,7 @@ import { HistoryPanel } from './components/Panels/HistoryPanel';
 import { ResizePanel } from './components/Panels/ResizePanel';
 import { CropPanel, type CropSelection } from './components/Panels/CropPanel';
 import { PreviewModal } from './components/PreviewModal';
+import { ExportModal, type ExportOptions } from './components/ExportModal';
 import { WorkspaceTabs } from './components/WorkspaceTabs/WorkspaceTabs';
 import { useEditorState } from './hooks/useEditorState';
 import { ViewControls } from './components/Sidebar/ViewControls';
@@ -24,6 +25,7 @@ import { deserializeFrames } from './utils/serialization';
 import { isGifFile, convertImageToGif } from './utils/imageToGif';
 import { resizeFrames, cropFrames } from './utils/imageTransform';
 import { applyIntensifiesEffect, applyPartyEffect, applyOnDrugsEffect, addCustomPadding, rotate90, flipFrame } from './utils/gifEffects';
+import { exportAsPNG, exportAsAPNG, exportAsWebP, exportAsMP4, getExportFilename } from './utils/exporters';
 import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
@@ -63,6 +65,10 @@ function App() {
     showPreviewModal,
     setShowPreviewModal,
   } = useEditorState();
+
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportProgress, setExportProgress] = useState(0);
 
   const { decodeGif, isDecoding, error: decodeError } = useGifDecoder();
   const { downloadGif, isEncoding, progress } = useGifEncoder();
@@ -204,6 +210,67 @@ function App() {
       });
     } catch (err) {
       console.error('Failed to export GIF:', err);
+    }
+  };
+
+  const handleExportWithOptions = async (options: ExportOptions) => {
+    if (frames.length === 0) return;
+
+    try {
+      setExportProgress(0);
+      console.log('Exporting with format:', options.format, 'Options:', options);
+
+      // Determine which frames to export
+      const framesToExport = options.useSelectedFrames && selectedFrames.size > 0
+        ? Array.from(selectedFrames).sort((a, b) => a - b).map(i => frames[i])
+        : frames;
+
+      const filename = getExportFilename(options.format);
+
+      switch (options.format) {
+        case 'gif':
+          await downloadGif(framesToExport, filename, {
+            quality: options.quality,
+            loopCount: options.loopCount,
+          });
+          setExportProgress(100);
+          break;
+
+        case 'png': {
+          // Export single frame (current or first selected)
+          const frameToExport = options.useSelectedFrames && selectedFrames.size > 0
+            ? frames[Array.from(selectedFrames)[0]]
+            : frames[currentFrameIndex];
+          await exportAsPNG(frameToExport, filename);
+          setExportProgress(100);
+          break;
+        }
+
+        case 'apng':
+          await exportAsAPNG(framesToExport, filename, options, setExportProgress);
+          break;
+
+        case 'webp':
+          await exportAsWebP(framesToExport, filename, options, setExportProgress);
+          break;
+
+        case 'mp4':
+          await exportAsMP4(framesToExport, filename, options, setExportProgress);
+          break;
+
+        default:
+          console.error('Unsupported export format:', options.format);
+      }
+
+      // Close modal after successful export
+      setTimeout(() => {
+        setShowExportModal(false);
+        setExportProgress(0);
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to export:', err);
+      alert(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setExportProgress(0);
     }
   };
 
@@ -953,6 +1020,13 @@ function App() {
             <button onClick={handleExport} disabled={isEncoding} className="toolbar-button export-button">
               {isEncoding ? `Exporting... ${progress}%` : '💾 Download GIF'}
             </button>
+            <button
+              onClick={() => setShowExportModal(true)}
+              disabled={isEncoding || exportProgress > 0}
+              className="toolbar-button"
+            >
+              📤 Export As...
+            </button>
             <button onClick={() => window.location.reload()} className="toolbar-button">
               📂 Load New Image
             </button>
@@ -1168,6 +1242,17 @@ function App() {
         />
       )}
 
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExportWithOptions}
+        totalFrames={frames.length}
+        selectedFramesCount={selectedFrames.size}
+        isExporting={exportProgress > 0 && exportProgress < 100}
+        progress={exportProgress}
+      />
+
       <footer className="app-footer">
         <p>
           Made with ❤️ | All processing happens in your browser
@@ -1194,7 +1279,18 @@ function App() {
         </p>
         {import.meta.env.VITE_COMMIT_SHA && (
           <p className="build-info">
-            Build: {import.meta.env.VITE_COMMIT_SHA.substring(0, 7)}
+            Build:{' '}
+            {import.meta.env.VITE_GITHUB_URL ? (
+              <a
+                href={`${import.meta.env.VITE_GITHUB_URL}/commit/${import.meta.env.VITE_COMMIT_SHA}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {import.meta.env.VITE_COMMIT_SHA.substring(0, 7)}
+              </a>
+            ) : (
+              import.meta.env.VITE_COMMIT_SHA.substring(0, 7)
+            )}
             {import.meta.env.VITE_BUILD_DATE && (
               <> • {new Date(import.meta.env.VITE_BUILD_DATE).toLocaleDateString()}</>
             )}
