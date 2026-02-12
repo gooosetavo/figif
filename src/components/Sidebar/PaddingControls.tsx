@@ -28,6 +28,7 @@ export const PaddingControls = ({ framesCount, onApplyPadding }: PaddingControls
         <button
           onClick={() => setShowPadding(!showPadding)}
           className={showPadding ? 'active-toggle' : ''}
+          title="Add transparent padding around frames (useful before applying effects)"
         >
           {showPadding ? 'Hide' : 'Show'} Padding
         </button>
@@ -91,6 +92,7 @@ export const PaddingControls = ({ framesCount, onApplyPadding }: PaddingControls
               onClick={() => handleApply('current')}
               disabled={framesCount === 0 || (!paddingTop && !paddingBottom && !paddingLeft && !paddingRight)}
               className="action-button"
+              title="Add padding to the current frame only"
             >
               Apply to Current Frame
             </button>
@@ -98,6 +100,7 @@ export const PaddingControls = ({ framesCount, onApplyPadding }: PaddingControls
               onClick={() => handleApply('all')}
               disabled={framesCount === 0 || (!paddingTop && !paddingBottom && !paddingLeft && !paddingRight)}
               className="action-button warning"
+              title="Add padding to all frames in the animation"
             >
               Apply to All Frames
             </button>

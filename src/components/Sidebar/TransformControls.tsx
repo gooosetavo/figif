@@ -22,6 +22,7 @@ export const TransformControls = ({
         <button
           onClick={() => setShowTransform(!showTransform)}
           className={showTransform ? 'active-toggle' : ''}
+          title="Rotate or flip frames 90 degrees"
         >
           {showTransform ? 'Hide' : 'Show'} Transform
         </button>
@@ -42,6 +43,7 @@ export const TransformControls = ({
                 disabled={framesCount === 0}
                 className="action-button"
                 style={{ fontSize: '13px', padding: '8px' }}
+                title="Rotate current frame 90° counter-clockwise"
               >
                 ↺ Rotate Left (Current)
               </button>
@@ -50,6 +52,7 @@ export const TransformControls = ({
                 disabled={framesCount === 0}
                 className="action-button"
                 style={{ fontSize: '13px', padding: '8px' }}
+                title="Rotate current frame 90° clockwise"
               >
                 ↻ Rotate Right (Current)
               </button>
@@ -100,6 +103,7 @@ export const TransformControls = ({
                 disabled={framesCount === 0}
                 className="action-button"
                 style={{ fontSize: '13px', padding: '8px' }}
+                title="Mirror current frame horizontally (left-right flip)"
               >
                 ↔ Flip Horizontal (Current)
               </button>
@@ -108,6 +112,7 @@ export const TransformControls = ({
                 disabled={framesCount === 0}
                 className="action-button"
                 style={{ fontSize: '13px', padding: '8px' }}
+                title="Mirror current frame vertically (upside-down flip)"
               >
                 ↕ Flip Vertical (Current)
               </button>

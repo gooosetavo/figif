@@ -144,6 +144,16 @@ export function Timeline({
   }
 
   const fps = frames[currentFrameIndex] ? Math.round(1000 / frames[currentFrameIndex].delay) : 0;
+  const isMac = navigator.userAgent.indexOf('Mac') !== -1;
+  const ctrlKeyName = isMac ? 'Cmd' : 'Ctrl';
+
+  const getFrameTooltip = (index: number) => {
+    const isSelected = selectedFrames.has(index);
+    if (isSelected) {
+      return `Frame ${index + 1}\nClick: View frame\n${ctrlKeyName}+Click: Deselect\nShift+Click: Select range\nDrag: Reorder frames`;
+    }
+    return `Frame ${index + 1}\nClick: Select & view\n${ctrlKeyName}+Click: Multi-select\nShift+Click: Select range\nDrag: Reorder frames`;
+  };
 
   return (
     <div className="timeline">
@@ -181,6 +191,7 @@ export function Timeline({
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(index, e)}
               onDragEnd={handleDragEnd}
+              title={getFrameTooltip(index)}
             >
               <img src={renderThumbnail(frame, index)} alt={`Frame ${index + 1}`} />
               <span className="frame-number">{index + 1}</span>
