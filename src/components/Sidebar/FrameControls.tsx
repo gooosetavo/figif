@@ -7,6 +7,7 @@ interface FrameControlsProps {
   onRemoveEveryOtherFrame: () => void;
   onDuplicateAllFrames: () => void;
   onKeepEveryNthFrame: (n: number) => void;
+  onSpeedChange: (multiplier: number) => void;
 }
 
 export const FrameControls = ({
@@ -18,10 +19,11 @@ export const FrameControls = ({
   onRemoveEveryOtherFrame,
   onDuplicateAllFrames,
   onKeepEveryNthFrame,
+  onSpeedChange,
 }: FrameControlsProps) => {
   return (
     <div className="control-section">
-      <h3>Frames</h3>
+      <h3>Frames & Speed</h3>
       <div className="control-group">
         <button onClick={() => onDuplicateFrame('current')}>Duplicate Current</button>
         {selectedFramesCount > 0 && (
@@ -76,6 +78,14 @@ export const FrameControls = ({
         >
           Keep 1/5
         </button>
+      </div>
+
+      <div className="control-group" style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+        <label style={{ fontSize: '13px', fontWeight: 600, marginBottom: '4px', display: 'block' }}>Animation Speed</label>
+        <div className="button-group">
+          <button onClick={() => onSpeedChange(0.5)} title="Slower (2x)">− Slower</button>
+          <button onClick={() => onSpeedChange(2)} title="Faster (2x)">+ Faster</button>
+        </div>
       </div>
     </div>
   );

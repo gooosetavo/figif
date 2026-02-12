@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GifFrame } from '../types/gif.types';
 import { CropOverlay } from './CropOverlay';
+import { CanvasZoomControls } from './CanvasZoomControls';
+import { CanvasMinimap } from './CanvasMinimap';
 import type { CropSelection } from './Panels/CropPanel';
 import './CanvasEditor.css';
 
@@ -12,6 +14,9 @@ interface CanvasEditorProps {
   cropSelection?: CropSelection | null;
   onCropSelectionChange?: (selection: CropSelection) => void;
   onCanvasClick?: (x: number, y: number) => void;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onZoomReset?: () => void;
 }
 
 export function CanvasEditor({
@@ -21,14 +26,19 @@ export function CanvasEditor({
   selectionMask = null,
   cropSelection = null,
   onCropSelectionChange,
-  onCanvasClick
+  onCanvasClick,
+  onZoomIn,
+  onZoomOut,
+  onZoomReset,
 }: CanvasEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [viewportDimensions, setViewportDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     if (!frame || !canvasRef.current) return;
@@ -109,6 +119,30 @@ export function CanvasEditor({
     setIsPanning(false);
   };
 
+  const handleViewportChange = (scrollLeft: number, scrollTop: number) => {
+    // Update pan based on minimap interaction
+    setPan({
+      x: -scrollLeft,
+      y: -scrollTop,
+    });
+  };
+
+  // Track viewport dimensions for minimap
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (editorRef.current) {
+        setViewportDimensions({
+          width: editorRef.current.clientWidth,
+          height: editorRef.current.clientHeight,
+        });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
+
   if (!frame) {
     return (
       <div className="canvas-editor empty">
@@ -119,14 +153,26 @@ export function CanvasEditor({
 
   return (
     <div
-      ref={containerRef}
+      ref={editorRef}
       className={`canvas-editor ${isPanning ? 'panning' : ''} ${selectionMode ? 'selection-mode' : ''}`}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
     >
+      {/* Zoom Controls */}
+      {onZoomIn && onZoomOut && onZoomReset && (
+        <CanvasZoomControls
+          zoom={zoom}
+          onZoomIn={onZoomIn}
+          onZoomOut={onZoomOut}
+          onZoomReset={onZoomReset}
+        />
+      )}
+
+      {/* Main Canvas */}
       <div
+        ref={containerRef}
         className="canvas-container"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
@@ -144,6 +190,17 @@ export function CanvasEditor({
           />
         )}
       </div>
+
+      {/* Minimap */}
+      <CanvasMinimap
+        frame={frame}
+        zoom={zoom}
+        viewportWidth={viewportDimensions.width}
+        viewportHeight={viewportDimensions.height}
+        scrollLeft={-pan.x}
+        scrollTop={-pan.y}
+        onViewportChange={handleViewportChange}
+      />
     </div>
   );
 }

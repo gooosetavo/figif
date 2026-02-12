@@ -10,8 +10,6 @@ import { PreviewModal } from './components/PreviewModal';
 import { ExportModal, type ExportOptions } from './components/ExportModal';
 import { WorkspaceTabs } from './components/WorkspaceTabs/WorkspaceTabs';
 import { useEditorState } from './hooks/useEditorState';
-import { ViewControls } from './components/Sidebar/ViewControls';
-import { SpeedControls } from './components/Sidebar/SpeedControls';
 import { FrameControls } from './components/Sidebar/FrameControls';
 import { PaddingControls } from './components/Sidebar/PaddingControls';
 import { TransformControls } from './components/Sidebar/TransformControls';
@@ -1056,15 +1054,6 @@ function App() {
       ) : (
         <div className="editor-container">
           <aside className="sidebar">
-            <ViewControls
-              zoom={zoom}
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
-              onZoomReset={handleZoomReset}
-            />
-
-            <SpeedControls onSpeedChange={handleSpeedChange} />
-
             <FrameControls
               framesCount={frames.length}
               selectedFramesCount={selectedFrames.size}
@@ -1074,6 +1063,7 @@ function App() {
               onRemoveEveryOtherFrame={handleRemoveEveryOtherFrame}
               onDuplicateAllFrames={handleDuplicateAllFrames}
               onKeepEveryNthFrame={handleKeepEveryNthFrame}
+              onSpeedChange={handleSpeedChange}
             />
 
             <PaddingControls
@@ -1184,6 +1174,9 @@ function App() {
               cropSelection={cropSelection}
               onCropSelectionChange={setCropSelection}
               onCanvasClick={handleCanvasClick}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onZoomReset={handleZoomReset}
             />
             <Timeline
               frames={frames}
