@@ -16,7 +16,7 @@ import { useWorkspaceManager } from './hooks/useWorkspaceManager';
 import { deserializeFrames } from './utils/serialization';
 import { isGifFile, convertImageToGif } from './utils/imageToGif';
 import { resizeFrames, cropFrames } from './utils/imageTransform';
-import { applyIntensifiesEffect, applyPartyEffect, applyOnDrugsEffect, addCustomPadding } from './utils/gifEffects';
+import { applyIntensifiesEffect, applyPartyEffect, applyOnDrugsEffect, addCustomPadding, rotate90, flipFrame } from './utils/gifEffects';
 import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
@@ -42,6 +42,10 @@ function App() {
   const [paddingBottom, setPaddingBottom] = useState(true);
   const [paddingLeft, setPaddingLeft] = useState(true);
 
+  // Frame selection state
+  const [selectedFrames, setSelectedFrames] = useState<Set<number>>(new Set());
+  const [showTransform, setShowTransform] = useState(false);
+
   // Preview state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -58,8 +62,6 @@ function App() {
     pause,
     loadGif,
     setFrames,
-    deleteFrame,
-    duplicateFrame,
     reverseFrames,
     updateAllFrameDelays,
   } = useFrameManager();
@@ -454,38 +456,94 @@ function App() {
   };
 
   // Enhanced frame operations with auto-save
-  const handleDeleteFrame = async (index: number) => {
+  const handleDeleteFrame = async (scope: 'current' | 'selected' = 'current') => {
     if (frames.length <= 1) return;
-    deleteFrame(index);
 
-    // Auto-save after state updates
-    setTimeout(async () => {
-      if (workspaceManager.activeWorkspace && frames.length > 1) {
-        const newFrames = frames.filter((_f, i) => i !== index);
-        await workspaceManager.saveSnapshot(
-          newFrames,
-          Math.min(index, newFrames.length - 1),
-          'Deleted frame',
-          true
-        );
+    try {
+      let newFrames: typeof frames;
+      let description: string;
+
+      if (scope === 'selected' && selectedFrames.size > 0) {
+        // Delete selected frames
+        const indicesToDelete = new Set(selectedFrames);
+        newFrames = frames.filter((_f, i) => !indicesToDelete.has(i));
+        description = `Deleted ${indicesToDelete.size} frame${indicesToDelete.size !== 1 ? 's' : ''}`;
+
+        // Clear selection after deletion
+        setSelectedFrames(new Set());
+      } else {
+        // Delete current frame
+        newFrames = frames.filter((_f, i) => i !== currentFrameIndex);
+        description = 'Deleted frame';
       }
-    }, 100);
-  };
 
-  const handleDuplicateFrame = async (index: number) => {
-    duplicateFrame(index);
+      if (newFrames.length === 0) {
+        console.error('Cannot delete all frames');
+        return;
+      }
 
-    // Auto-save after state updates
-    setTimeout(async () => {
+      setFrames(newFrames);
+      setCurrentFrameIndex(Math.min(currentFrameIndex, newFrames.length - 1));
+
+      // Auto-save
       if (workspaceManager.activeWorkspace) {
         await workspaceManager.saveSnapshot(
-          frames,
-          currentFrameIndex,
-          'Duplicated frame',
+          newFrames,
+          Math.min(currentFrameIndex, newFrames.length - 1),
+          description,
           true
         );
       }
-    }, 100);
+    } catch (err) {
+      console.error('Failed to delete frames:', err);
+    }
+  };
+
+  const handleDuplicateFrame = async (scope: 'current' | 'selected' = 'current') => {
+    if (frames.length === 0) return;
+
+    try {
+      let newFrames: typeof frames;
+      let description: string;
+
+      if (scope === 'selected' && selectedFrames.size > 0) {
+        // Duplicate selected frames
+        newFrames = [];
+        const selectedIndices = Array.from(selectedFrames).sort((a, b) => a - b);
+
+        for (let i = 0; i < frames.length; i++) {
+          newFrames.push(frames[i]);
+          if (selectedIndices.includes(i)) {
+            // Add duplicate right after the original
+            newFrames.push({ ...frames[i] });
+          }
+        }
+
+        description = `Duplicated ${selectedIndices.length} frame${selectedIndices.length !== 1 ? 's' : ''}`;
+      } else {
+        // Duplicate current frame
+        newFrames = [
+          ...frames.slice(0, currentFrameIndex + 1),
+          { ...frames[currentFrameIndex] },
+          ...frames.slice(currentFrameIndex + 1)
+        ];
+        description = 'Duplicated frame';
+      }
+
+      setFrames(newFrames);
+
+      // Auto-save
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          currentFrameIndex,
+          description,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('Failed to duplicate frames:', err);
+    }
   };
 
   const handleReverseFrames = async () => {
@@ -618,6 +676,134 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to apply padding:', err);
+    }
+  };
+
+  const handleRotate = async (clockwise: boolean, scope: 'current' | 'selected' | 'all') => {
+    if (frames.length === 0) return;
+
+    try {
+      const newFrames = [...frames];
+      const framesToRotate = scope === 'all'
+        ? Array.from({ length: frames.length }, (_, i) => i)
+        : scope === 'selected'
+        ? Array.from(selectedFrames)
+        : [currentFrameIndex];
+
+      for (const index of framesToRotate) {
+        newFrames[index] = rotate90(frames[index], clockwise);
+      }
+
+      setFrames(newFrames);
+
+      // Auto-save
+      if (workspaceManager.activeWorkspace) {
+        const direction = clockwise ? 'clockwise' : 'counterclockwise';
+        const scopeText = scope === 'all'
+          ? 'all frames'
+          : scope === 'selected'
+          ? `${framesToRotate.length} selected frame${framesToRotate.length !== 1 ? 's' : ''}`
+          : 'current frame';
+
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          currentFrameIndex,
+          `Rotated 90° ${direction} (${scopeText})`,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('Failed to rotate frames:', err);
+    }
+  };
+
+  const handleFlip = async (horizontal: boolean, scope: 'current' | 'selected' | 'all') => {
+    if (frames.length === 0) return;
+
+    try {
+      const newFrames = [...frames];
+      const framesToFlip = scope === 'all'
+        ? Array.from({ length: frames.length }, (_, i) => i)
+        : scope === 'selected'
+        ? Array.from(selectedFrames)
+        : [currentFrameIndex];
+
+      for (const index of framesToFlip) {
+        newFrames[index] = flipFrame(frames[index], horizontal);
+      }
+
+      setFrames(newFrames);
+
+      // Auto-save
+      if (workspaceManager.activeWorkspace) {
+        const direction = horizontal ? 'horizontally' : 'vertically';
+        const scopeText = scope === 'all'
+          ? 'all frames'
+          : scope === 'selected'
+          ? `${framesToFlip.length} selected frame${framesToFlip.length !== 1 ? 's' : ''}`
+          : 'current frame';
+
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          currentFrameIndex,
+          `Flipped ${direction} (${scopeText})`,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('Failed to flip frames:', err);
+    }
+  };
+
+  const handleReorderFrames = async (fromIndex: number, toIndex: number) => {
+    if (frames.length === 0 || fromIndex === toIndex) return;
+
+    try {
+      const newFrames = [...frames];
+      const [movedFrame] = newFrames.splice(fromIndex, 1);
+      newFrames.splice(toIndex, 0, movedFrame);
+
+      setFrames(newFrames);
+
+      // Update current frame index if needed
+      let newCurrentIndex = currentFrameIndex;
+      if (currentFrameIndex === fromIndex) {
+        newCurrentIndex = toIndex;
+      } else if (fromIndex < currentFrameIndex && toIndex >= currentFrameIndex) {
+        newCurrentIndex = currentFrameIndex - 1;
+      } else if (fromIndex > currentFrameIndex && toIndex <= currentFrameIndex) {
+        newCurrentIndex = currentFrameIndex + 1;
+      }
+      setCurrentFrameIndex(newCurrentIndex);
+
+      // Update selected frames indices
+      if (selectedFrames.size > 0) {
+        const newSelection = new Set<number>();
+        selectedFrames.forEach(idx => {
+          if (idx === fromIndex) {
+            newSelection.add(toIndex);
+          } else if (fromIndex < idx && toIndex >= idx) {
+            newSelection.add(idx - 1);
+          } else if (fromIndex > idx && toIndex <= idx) {
+            newSelection.add(idx + 1);
+          } else {
+            newSelection.add(idx);
+          }
+        });
+        setSelectedFrames(newSelection);
+      }
+
+      // Auto-save
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          newCurrentIndex,
+          `Moved frame ${fromIndex + 1} to position ${toIndex + 1}`,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('Failed to reorder frames:', err);
     }
   };
 
@@ -780,10 +966,24 @@ function App() {
             <div className="control-section">
               <h3>Frames</h3>
               <div className="control-group">
-                <button onClick={() => handleDuplicateFrame(currentFrameIndex)}>Duplicate Frame</button>
-                <button onClick={() => handleDeleteFrame(currentFrameIndex)} disabled={frames.length <= 1}>
-                  Delete Frame
+                <button onClick={() => handleDuplicateFrame('current')}>Duplicate Current</button>
+                {selectedFrames.size > 0 && (
+                  <button onClick={() => handleDuplicateFrame('selected')} style={{ background: '#48bb78' }}>
+                    Duplicate Selected ({selectedFrames.size})
+                  </button>
+                )}
+                <button onClick={() => handleDeleteFrame('current')} disabled={frames.length <= 1}>
+                  Delete Current
                 </button>
+                {selectedFrames.size > 0 && (
+                  <button
+                    onClick={() => handleDeleteFrame('selected')}
+                    disabled={frames.length <= selectedFrames.size}
+                    style={{ background: '#e53e3e' }}
+                  >
+                    Delete Selected ({selectedFrames.size})
+                  </button>
+                )}
                 <button onClick={handleReverseFrames}>Reverse All</button>
               </div>
               <div className="control-group" style={{ marginTop: '8px' }}>
@@ -911,6 +1111,147 @@ function App() {
             </div>
 
             <div className="control-section">
+              <h3>Rotate & Flip</h3>
+              <div className="control-group">
+                <button
+                  onClick={() => setShowTransform(!showTransform)}
+                  className={showTransform ? 'active-toggle' : ''}
+                >
+                  {showTransform ? 'Hide' : 'Show'} Transform
+                </button>
+              </div>
+              {showTransform && (
+                <div style={{ marginTop: '12px' }}>
+                  {selectedFrames.size > 0 && (
+                    <div style={{ marginBottom: '12px', padding: '8px', background: '#edf2f7', borderRadius: '6px', fontSize: '13px', color: '#4a5568' }}>
+                      ✓ {selectedFrames.size} frame{selectedFrames.size !== 1 ? 's' : ''} selected
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Rotate 90°</label>
+                    <div className="button-group-vertical" style={{ gap: '4px' }}>
+                      <button
+                        onClick={() => handleRotate(false, 'current')}
+                        disabled={frames.length === 0}
+                        className="action-button"
+                        style={{ fontSize: '13px', padding: '8px' }}
+                      >
+                        ↺ Rotate Left (Current)
+                      </button>
+                      <button
+                        onClick={() => handleRotate(true, 'current')}
+                        disabled={frames.length === 0}
+                        className="action-button"
+                        style={{ fontSize: '13px', padding: '8px' }}
+                      >
+                        ↻ Rotate Right (Current)
+                      </button>
+                      {selectedFrames.size > 0 && (
+                        <>
+                          <button
+                            onClick={() => handleRotate(false, 'selected')}
+                            disabled={frames.length === 0}
+                            className="action-button"
+                            style={{ fontSize: '13px', padding: '8px', background: '#48bb78' }}
+                          >
+                            ↺ Rotate Left (Selected {selectedFrames.size})
+                          </button>
+                          <button
+                            onClick={() => handleRotate(true, 'selected')}
+                            disabled={frames.length === 0}
+                            className="action-button"
+                            style={{ fontSize: '13px', padding: '8px', background: '#48bb78' }}
+                          >
+                            ↻ Rotate Right (Selected {selectedFrames.size})
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleRotate(false, 'all')}
+                        disabled={frames.length === 0}
+                        className="action-button warning"
+                        style={{ fontSize: '13px', padding: '8px' }}
+                      >
+                        ↺ Rotate Left (All)
+                      </button>
+                      <button
+                        onClick={() => handleRotate(true, 'all')}
+                        disabled={frames.length === 0}
+                        className="action-button warning"
+                        style={{ fontSize: '13px', padding: '8px' }}
+                      >
+                        ↻ Rotate Right (All)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Flip</label>
+                    <div className="button-group-vertical" style={{ gap: '4px' }}>
+                      <button
+                        onClick={() => handleFlip(true, 'current')}
+                        disabled={frames.length === 0}
+                        className="action-button"
+                        style={{ fontSize: '13px', padding: '8px' }}
+                      >
+                        ↔ Flip Horizontal (Current)
+                      </button>
+                      <button
+                        onClick={() => handleFlip(false, 'current')}
+                        disabled={frames.length === 0}
+                        className="action-button"
+                        style={{ fontSize: '13px', padding: '8px' }}
+                      >
+                        ↕ Flip Vertical (Current)
+                      </button>
+                      {selectedFrames.size > 0 && (
+                        <>
+                          <button
+                            onClick={() => handleFlip(true, 'selected')}
+                            disabled={frames.length === 0}
+                            className="action-button"
+                            style={{ fontSize: '13px', padding: '8px', background: '#48bb78' }}
+                          >
+                            ↔ Flip Horizontal (Selected {selectedFrames.size})
+                          </button>
+                          <button
+                            onClick={() => handleFlip(false, 'selected')}
+                            disabled={frames.length === 0}
+                            className="action-button"
+                            style={{ fontSize: '13px', padding: '8px', background: '#48bb78' }}
+                          >
+                            ↕ Flip Vertical (Selected {selectedFrames.size})
+                          </button>
+                        </>
+                      )}
+                      <button
+                        onClick={() => handleFlip(true, 'all')}
+                        disabled={frames.length === 0}
+                        className="action-button warning"
+                        style={{ fontSize: '13px', padding: '8px' }}
+                      >
+                        ↔ Flip Horizontal (All)
+                      </button>
+                      <button
+                        onClick={() => handleFlip(false, 'all')}
+                        disabled={frames.length === 0}
+                        className="action-button warning"
+                        style={{ fontSize: '13px', padding: '8px' }}
+                      >
+                        ↕ Flip Vertical (All)
+                      </button>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: '12px', color: '#718096', marginTop: '12px', lineHeight: '1.4' }}>
+                    💡 Ctrl/Cmd+Click frames in timeline to select multiple. Shift+Click to select range.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="control-section">
               <h3>Resize</h3>
               <div className="control-group">
                 <button
@@ -1026,7 +1367,10 @@ function App() {
               frames={frames}
               currentFrameIndex={currentFrameIndex}
               isPlaying={isPlaying}
+              selectedFrames={selectedFrames}
               onFrameSelect={setCurrentFrameIndex}
+              onFrameMultiSelect={setSelectedFrames}
+              onReorderFrames={handleReorderFrames}
               onPlay={play}
               onPause={pause}
               onNext={goToNextFrame}

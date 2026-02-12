@@ -58,7 +58,7 @@ export function applyOnDrugsEffect(frames: GifFrame[]): GifFrame[] {
   });
 
   // Apply random rotation
-  processedFrames = processedFrames.map((frame, index) => {
+  processedFrames = processedFrames.map((frame, _index) => {
     const angle = (Math.random() - 0.5) * 15; // ±7.5 degrees
     return rotateFrame(frame, angle);
   });
@@ -170,6 +170,110 @@ function rotateFrame(frame: GifFrame, angleDegrees: number): GifFrame {
   return {
     ...frame,
     imageData: rotatedImageData,
+    canvas,
+  };
+}
+
+/**
+ * Rotates a frame by 90 degrees (clockwise or counterclockwise)
+ * @param frame - The frame to rotate
+ * @param clockwise - If true, rotate 90° clockwise; if false, rotate 90° counterclockwise
+ */
+export function rotate90(frame: GifFrame, clockwise: boolean = true): GifFrame {
+  const { width, height } = frame.imageData;
+  const sourceData = frame.imageData.data;
+
+  // Swap dimensions for 90° rotation
+  const newWidth = height;
+  const newHeight = width;
+  const newImageData = new ImageData(newWidth, newHeight);
+  const newData = newImageData.data;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const sourceIndex = (y * width + x) * 4;
+      let targetX: number, targetY: number;
+
+      if (clockwise) {
+        // 90° clockwise: (x, y) -> (height - 1 - y, x)
+        targetX = height - 1 - y;
+        targetY = x;
+      } else {
+        // 90° counterclockwise: (x, y) -> (y, width - 1 - x)
+        targetX = y;
+        targetY = width - 1 - x;
+      }
+
+      const targetIndex = (targetY * newWidth + targetX) * 4;
+
+      newData[targetIndex] = sourceData[sourceIndex];         // R
+      newData[targetIndex + 1] = sourceData[sourceIndex + 1]; // G
+      newData[targetIndex + 2] = sourceData[sourceIndex + 2]; // B
+      newData[targetIndex + 3] = sourceData[sourceIndex + 3]; // A
+    }
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = newWidth;
+  canvas.height = newHeight;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.putImageData(newImageData, 0, 0);
+  }
+
+  return {
+    ...frame,
+    imageData: newImageData,
+    canvas,
+  };
+}
+
+/**
+ * Flips a frame horizontally or vertically
+ * @param frame - The frame to flip
+ * @param horizontal - If true, flip horizontally; if false, flip vertically
+ */
+export function flipFrame(frame: GifFrame, horizontal: boolean = true): GifFrame {
+  const { width, height } = frame.imageData;
+  const sourceData = frame.imageData.data;
+  const newImageData = new ImageData(width, height);
+  const newData = newImageData.data;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const sourceIndex = (y * width + x) * 4;
+      let targetX: number, targetY: number;
+
+      if (horizontal) {
+        // Flip horizontally: (x, y) -> (width - 1 - x, y)
+        targetX = width - 1 - x;
+        targetY = y;
+      } else {
+        // Flip vertically: (x, y) -> (x, height - 1 - y)
+        targetX = x;
+        targetY = height - 1 - y;
+      }
+
+      const targetIndex = (targetY * width + targetX) * 4;
+
+      newData[targetIndex] = sourceData[sourceIndex];         // R
+      newData[targetIndex + 1] = sourceData[sourceIndex + 1]; // G
+      newData[targetIndex + 2] = sourceData[sourceIndex + 2]; // B
+      newData[targetIndex + 3] = sourceData[sourceIndex + 3]; // A
+    }
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.putImageData(newImageData, 0, 0);
+  }
+
+  return {
+    ...frame,
+    imageData: newImageData,
     canvas,
   };
 }

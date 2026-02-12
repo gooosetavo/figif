@@ -70,10 +70,14 @@
   border: 2px solid transparent;
   border-radius: 6px;
   overflow: hidden;
-  cursor: pointer;
+  cursor: grab;
   transition: all 0.2s;
   position: relative;
   background: #4a5568;
+}
+
+.timeline-frame:active {
+  cursor: grabbing;
 }
 
 .timeline-frame:hover {
@@ -84,6 +88,27 @@
 .timeline-frame.active {
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.timeline-frame.selected {
+  border-color: #48bb78;
+  background: #38a169;
+}
+
+.timeline-frame.selected.active {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+}
+
+.timeline-frame.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.timeline-frame.drag-over {
+  border-left: 3px solid #f6ad55;
+  border-left-style: dashed;
+  transform: translateX(4px);
 }
 
 .timeline-frame img {
