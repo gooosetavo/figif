@@ -2,8 +2,10 @@
  * HistoryPanel - Version control panel for undo/redo and manual saves
  */
 
+import { useMemo } from 'react';
 import type { WorkspaceSnapshot } from '../../types/workspace.types';
 import type { GifFrame } from '../../types/gif.types';
+import { deserializeFrame } from '../../utils/serialization';
 import './HistoryPanel.css';
 
 interface HistoryPanelProps {
@@ -46,6 +48,39 @@ export function HistoryPanel({
 
   const hasUnsavedChanges = currentFrames.length > 0 && historyStack.length === 0;
 
+  // Generate thumbnails for snapshots
+  const snapshotThumbnails = useMemo(() => {
+    return historyStack.map((snapshot) => {
+      if (snapshot.frames.length === 0) return null;
+
+      try {
+        const firstFrame = deserializeFrame(snapshot.frames[snapshot.currentFrameIndex] || snapshot.frames[0]);
+        const canvas = document.createElement('canvas');
+        const maxSize = 48;
+        const aspectRatio = firstFrame.imageData.width / firstFrame.imageData.height;
+
+        let width = maxSize;
+        let height = maxSize;
+        if (aspectRatio > 1) {
+          height = maxSize / aspectRatio;
+        } else {
+          width = maxSize * aspectRatio;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx && firstFrame.canvas) {
+          ctx.drawImage(firstFrame.canvas, 0, 0, width, height);
+          return canvas.toDataURL('image/png');
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    });
+  }, [historyStack]);
+
   return (
     <div className="history-panel">
       <div className="history-controls">
@@ -87,6 +122,7 @@ export function HistoryPanel({
             {historyStack.slice().reverse().map((snapshot, reverseIndex) => {
               const actualIndex = historyStack.length - 1 - reverseIndex;
               const isCurrent = actualIndex === currentHistoryIndex;
+              const thumbnail = snapshotThumbnails[actualIndex];
 
               return (
                 <div
@@ -95,19 +131,22 @@ export function HistoryPanel({
                     actualIndex > currentHistoryIndex ? 'future' : ''
                   }`}
                 >
-                  <div className="history-snapshot-icon">
-                    {snapshot.isAutoSave ? '🔄' : '💾'}
-                  </div>
+                  {thumbnail && (
+                    <div className="history-snapshot-thumbnail">
+                      <img src={thumbnail} alt="" />
+                    </div>
+                  )}
                   <div className="history-snapshot-details">
                     <div className="history-snapshot-description">
                       {snapshot.description}
+                      {snapshot.isAutoSave && <span className="auto-save-badge">Auto</span>}
                     </div>
                     <div className="history-snapshot-meta">
                       <span className="history-snapshot-time">
                         {formatTimestamp(snapshot.timestamp)}
                       </span>
                       <span className="history-snapshot-frames">
-                        {snapshot.frames.length} frames
+                        {snapshot.frames.length} frame{snapshot.frames.length !== 1 ? 's' : ''}
                       </span>
                     </div>
                   </div>

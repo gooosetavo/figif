@@ -125,9 +125,23 @@
   opacity: 0.5;
 }
 
-.history-snapshot-icon {
-  font-size: 18px;
+.history-snapshot-thumbnail {
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #f7fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+}
+
+.history-snapshot-thumbnail img {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
 }
 
 .history-snapshot-details {
@@ -142,6 +156,21 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auto-save-badge {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #718096;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .history-snapshot-meta {

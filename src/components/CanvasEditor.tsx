@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GifFrame } from '../types/gif.types';
+import { CropOverlay } from './CropOverlay';
+import type { CropSelection } from './Panels/CropPanel';
 import './CanvasEditor.css';
 
 interface CanvasEditorProps {
@@ -7,6 +9,8 @@ interface CanvasEditorProps {
   zoom: number;
   selectionMode?: boolean;
   selectionMask?: Uint8ClampedArray | null;
+  cropSelection?: CropSelection | null;
+  onCropSelectionChange?: (selection: CropSelection) => void;
   onCanvasClick?: (x: number, y: number) => void;
 }
 
@@ -15,6 +19,8 @@ export function CanvasEditor({
   zoom,
   selectionMode = false,
   selectionMask = null,
+  cropSelection = null,
+  onCropSelectionChange,
   onCanvasClick
 }: CanvasEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -126,6 +132,15 @@ export function CanvasEditor({
       >
         <canvas ref={canvasRef} />
         <canvas ref={overlayCanvasRef} className="overlay-canvas" />
+        {cropSelection && onCropSelectionChange && (
+          <CropOverlay
+            canvasWidth={frame.imageData.width}
+            canvasHeight={frame.imageData.height}
+            zoom={1}
+            cropSelection={cropSelection}
+            onCropSelectionChange={onCropSelectionChange}
+          />
+        )}
       </div>
     </div>
   );

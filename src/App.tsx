@@ -4,6 +4,8 @@ import { CanvasEditor } from './components/CanvasEditor';
 import { Timeline } from './components/Timeline';
 import { BackgroundRemovalPanel } from './components/Panels/BackgroundRemovalPanel';
 import { HistoryPanel } from './components/Panels/HistoryPanel';
+import { ResizePanel } from './components/Panels/ResizePanel';
+import { CropPanel, type CropSelection } from './components/Panels/CropPanel';
 import { PreviewModal } from './components/PreviewModal';
 import { WorkspaceTabs } from './components/WorkspaceTabs/WorkspaceTabs';
 import { useGifDecoder } from './hooks/useGifDecoder';
@@ -13,6 +15,7 @@ import { useBackgroundRemoval, type RemovalMode } from './hooks/useBackgroundRem
 import { useWorkspaceManager } from './hooks/useWorkspaceManager';
 import { deserializeFrames } from './utils/serialization';
 import { isGifFile, convertImageToGif } from './utils/imageToGif';
+import { resizeFrames, cropFrames } from './utils/imageTransform';
 import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
@@ -21,7 +24,12 @@ function App() {
   const [isManualSelectionMode, setIsManualSelectionMode] = useState(false);
   const [selectionMask, setSelectionMask] = useState<Uint8ClampedArray | null>(null);
   const [showBackgroundRemoval, setShowBackgroundRemoval] = useState(false);
-  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [showResize, setShowResize] = useState(false);
+  const [showCrop, setShowCrop] = useState(false);
+  const [cropSelection, setCropSelection] = useState<CropSelection | null>(null);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isCropping, setIsCropping] = useState(false);
+  const [isHistoryPanelCollapsed, setIsHistoryPanelCollapsed] = useState(false);
 
   // Preview state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -421,6 +429,65 @@ function App() {
     }
   };
 
+  // Resize handler
+  const handleResize = async (width: number, height: number, _maintainAspectRatio: boolean) => {
+    if (frames.length === 0) return;
+
+    setIsResizing(true);
+    try {
+      const resizedFrames = resizeFrames(frames, width, height);
+      setFrames(resizedFrames);
+
+      // Auto-save
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          resizedFrames,
+          currentFrameIndex,
+          `Resized to ${width}×${height}`,
+          false
+        );
+      }
+    } catch (err) {
+      console.error('Failed to resize frames:', err);
+    } finally {
+      setIsResizing(false);
+    }
+  };
+
+  // Crop handler
+  const handleCrop = async (selection: CropSelection) => {
+    if (frames.length === 0) return;
+
+    setIsCropping(true);
+    try {
+      const croppedFrames = cropFrames(
+        frames,
+        selection.x,
+        selection.y,
+        selection.width,
+        selection.height
+      );
+      setFrames(croppedFrames);
+
+      // Auto-save
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          croppedFrames,
+          currentFrameIndex,
+          `Cropped to ${selection.width}×${selection.height}`,
+          false
+        );
+      }
+
+      // Clear crop selection
+      setCropSelection(null);
+    } catch (err) {
+      console.error('Failed to crop frames:', err);
+    } finally {
+      setIsCropping(false);
+    }
+  };
+
   const currentFrame = frames[currentFrameIndex] || null;
 
   // Get preview data for modal
@@ -473,9 +540,9 @@ function App() {
 
             <div className="control-section">
               <h3>Speed</h3>
-              <div className="control-group">
-                <button onClick={() => handleSpeedChange(2)}>2x Faster</button>
-                <button onClick={() => handleSpeedChange(0.5)}>2x Slower</button>
+              <div className="button-group">
+                <button onClick={() => handleSpeedChange(0.5)} title="Slower (2x)">− Slower</button>
+                <button onClick={() => handleSpeedChange(2)} title="Faster (2x)">+ Faster</button>
               </div>
             </div>
 
@@ -491,27 +558,51 @@ function App() {
             </div>
 
             <div className="control-section">
-              <h3>Version Control</h3>
+              <h3>Resize</h3>
               <div className="control-group">
                 <button
-                  onClick={() => setShowHistoryPanel(!showHistoryPanel)}
-                  className={showHistoryPanel ? 'active-toggle' : ''}
+                  onClick={() => setShowResize(!showResize)}
+                  className={showResize ? 'active-toggle' : ''}
                 >
-                  {showHistoryPanel ? 'Hide' : 'Show'} History
+                  {showResize ? 'Hide' : 'Show'} Resize
                 </button>
               </div>
-              {showHistoryPanel && workspaceManager.activeWorkspace && (
+              {showResize && currentFrame && (
                 <div style={{ marginTop: '12px' }}>
-                  <HistoryPanel
-                    historyStack={workspaceManager.activeWorkspace.historyStack}
-                    currentHistoryIndex={workspaceManager.activeWorkspace.currentHistoryIndex}
-                    canUndo={workspaceManager.canUndo}
-                    canRedo={workspaceManager.canRedo}
-                    onUndo={handleUndo}
-                    onRedo={handleRedo}
-                    onSaveNow={handleManualSave}
-                    currentFrames={frames}
-                    currentFrameIndex={currentFrameIndex}
+                  <ResizePanel
+                    currentWidth={currentFrame.imageData.width}
+                    currentHeight={currentFrame.imageData.height}
+                    onResize={handleResize}
+                    isProcessing={isResizing}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="control-section">
+              <h3>Crop</h3>
+              <div className="control-group">
+                <button
+                  onClick={() => {
+                    setShowCrop(!showCrop);
+                    if (showCrop) {
+                      setCropSelection(null);
+                    }
+                  }}
+                  className={showCrop ? 'active-toggle' : ''}
+                >
+                  {showCrop ? 'Hide' : 'Show'} Crop
+                </button>
+              </div>
+              {showCrop && currentFrame && (
+                <div style={{ marginTop: '12px' }}>
+                  <CropPanel
+                    imageWidth={currentFrame.imageData.width}
+                    imageHeight={currentFrame.imageData.height}
+                    cropSelection={cropSelection}
+                    onCropSelectionChange={setCropSelection}
+                    onApplyCrop={handleCrop}
+                    isProcessing={isCropping}
                   />
                 </div>
               )}
@@ -568,6 +659,8 @@ function App() {
               zoom={zoom}
               selectionMode={isManualSelectionMode}
               selectionMask={selectionMask}
+              cropSelection={cropSelection}
+              onCropSelectionChange={setCropSelection}
               onCanvasClick={handleCanvasClick}
             />
             <Timeline
@@ -581,6 +674,35 @@ function App() {
               onPrevious={goToPreviousFrame}
             />
           </main>
+
+          {/* Right Panel - History */}
+          {workspaceManager.activeWorkspace && (
+            <aside className={`right-panel ${isHistoryPanelCollapsed ? 'collapsed' : ''}`}>
+              <button
+                className="right-panel-toggle"
+                onClick={() => setIsHistoryPanelCollapsed(!isHistoryPanelCollapsed)}
+                aria-label={isHistoryPanelCollapsed ? 'Show history' : 'Hide history'}
+              >
+                {isHistoryPanelCollapsed ? '◀' : '▶'}
+              </button>
+              <div className="right-panel-header">
+                <h3>History & Version Control</h3>
+              </div>
+              <div className="right-panel-content">
+                <HistoryPanel
+                  historyStack={workspaceManager.activeWorkspace.historyStack}
+                  currentHistoryIndex={workspaceManager.activeWorkspace.currentHistoryIndex}
+                  canUndo={workspaceManager.canUndo}
+                  canRedo={workspaceManager.canRedo}
+                  onUndo={handleUndo}
+                  onRedo={handleRedo}
+                  onSaveNow={handleManualSave}
+                  currentFrames={frames}
+                  currentFrameIndex={currentFrameIndex}
+                />
+              </div>
+            </aside>
+          )}
         </div>
       )}
 
