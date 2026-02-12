@@ -143,6 +143,56 @@ export function CanvasEditor({
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
+  // Keyboard shortcuts for zoom and pan
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if user is typing in an input field
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
+        return;
+      }
+
+      const PAN_STEP = 50;
+
+      switch (e.key) {
+        case '+':
+        case '=':
+          e.preventDefault();
+          onZoomIn?.();
+          break;
+        case '-':
+        case '_':
+          e.preventDefault();
+          onZoomOut?.();
+          break;
+        case '0':
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            onZoomReset?.();
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setPan(p => ({ x: p.x, y: p.y + PAN_STEP }));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setPan(p => ({ x: p.x, y: p.y - PAN_STEP }));
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          setPan(p => ({ x: p.x + PAN_STEP, y: p.y }));
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          setPan(p => ({ x: p.x - PAN_STEP, y: p.y }));
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onZoomIn, onZoomOut, onZoomReset]);
+
   if (!frame) {
     return (
       <div className="canvas-editor empty">

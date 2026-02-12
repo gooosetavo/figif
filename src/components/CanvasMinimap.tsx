@@ -115,7 +115,7 @@ export const CanvasMinimap = ({
   if (zoom <= 1 || !frame) return null;
 
   return (
-    <div className="canvas-minimap-container">
+    <div className="canvas-minimap-container" title="Click/drag to navigate, or use arrow keys to pan">
       <div className="canvas-minimap-label">Minimap</div>
       <canvas
         ref={canvasRef}

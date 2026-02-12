@@ -18,7 +18,7 @@ export const CanvasZoomControls = ({
       <button
         className="canvas-zoom-button"
         onClick={onZoomOut}
-        title="Zoom Out"
+        title="Zoom Out (- key)"
         aria-label="Zoom out"
       >
         −
@@ -26,14 +26,14 @@ export const CanvasZoomControls = ({
       <button
         className="canvas-zoom-button zoom-reset"
         onClick={onZoomReset}
-        title={`Reset Zoom (${Math.round(zoom * 100)}%)`}
+        title={`Reset Zoom (${Math.round(zoom * 100)}%) - Ctrl/Cmd+0`}
       >
         {Math.round(zoom * 100)}%
       </button>
       <button
         className="canvas-zoom-button"
         onClick={onZoomIn}
-        title="Zoom In"
+        title="Zoom In (+ or = key)"
         aria-label="Zoom in"
       >
         +
