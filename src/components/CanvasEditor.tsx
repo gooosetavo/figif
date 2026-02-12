@@ -48,7 +48,7 @@ export function CanvasEditor({
 
   // Draw selection mask overlay
   useEffect(() => {
-    if (!selectionMask || !overlayCanvasRef.current || !frame) return;
+    if (!overlayCanvasRef.current || !frame) return;
 
     const overlay = overlayCanvasRef.current;
     const ctx = overlay.getContext('2d');
@@ -58,21 +58,23 @@ export function CanvasEditor({
     overlay.width = frame.imageData.width;
     overlay.height = frame.imageData.height;
 
-    // Clear overlay
+    // Clear overlay first
     ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-    // Draw semi-transparent selection
-    const imageData = ctx.createImageData(frame.imageData.width, frame.imageData.height);
-    for (let i = 0; i < selectionMask.length; i++) {
-      const dataIndex = i * 4;
-      if (selectionMask[i] === 255) {
-        imageData.data[dataIndex] = 102; // R
-        imageData.data[dataIndex + 1] = 126; // G
-        imageData.data[dataIndex + 2] = 234; // B (purple)
-        imageData.data[dataIndex + 3] = 128; // Alpha (semi-transparent)
+    // Draw semi-transparent selection only if mask exists
+    if (selectionMask) {
+      const imageData = ctx.createImageData(frame.imageData.width, frame.imageData.height);
+      for (let i = 0; i < selectionMask.length; i++) {
+        const dataIndex = i * 4;
+        if (selectionMask[i] === 255) {
+          imageData.data[dataIndex] = 102; // R
+          imageData.data[dataIndex + 1] = 126; // G
+          imageData.data[dataIndex + 2] = 234; // B (purple)
+          imageData.data[dataIndex + 3] = 128; // Alpha (semi-transparent)
+        }
       }
+      ctx.putImageData(imageData, 0, 0);
     }
-    ctx.putImageData(imageData, 0, 0);
   }, [selectionMask, frame]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
