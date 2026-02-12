@@ -39,7 +39,9 @@ export const exportAsAPNG = async (
 ): Promise<void> => {
   // For now, we'll fall back to exporting as a zip of PNGs
   // A full implementation would use a library like upng-js
-  console.warn('APNG export not yet fully implemented. Exporting as individual PNGs.');
+  const message = `APNG export not yet fully implemented. Exporting ${frames.length} individual PNG files instead.`;
+  console.warn(message);
+  alert(message);
 
   for (let i = 0; i < frames.length; i++) {
     const frame = frames[i];
@@ -64,7 +66,9 @@ export const exportAsWebP = async (
 ): Promise<void> => {
   // WebP encoding is not natively supported in canvas
   // A full implementation would use a library like libwebp.js or wasm
-  console.warn('WebP export not yet fully implemented. Exporting first frame as PNG.');
+  const message = 'WebP export not yet fully implemented. Exporting first frame as PNG instead.';
+  console.warn(message);
+  alert(message);
 
   if (frames.length > 0) {
     await exportAsPNG(frames[0], filename.replace(/\.webp$/i, '.png'));
@@ -86,6 +90,10 @@ export const exportAsMP4 = async (
   onProgress?: (progress: number) => void
 ): Promise<void> => {
   try {
+    const message = 'MP4 encoding not supported in browsers. Exporting as WebM video instead.';
+    console.warn(message);
+    alert(message);
+
     // Create a canvas to render frames
     const canvas = document.createElement('canvas');
     canvas.width = frames[0].imageData.width;
