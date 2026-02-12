@@ -36,10 +36,10 @@ export function FileUpload({ onFileSelect, isLoading = false }: FileUploadProps)
     const files = e.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
-      if (file.type === 'image/gif') {
+      if (file.type.startsWith('image/')) {
         onFileSelect(file);
       } else {
-        alert('Please upload a GIF file');
+        alert('Please upload an image file');
       }
     }
   };
@@ -67,7 +67,7 @@ export function FileUpload({ onFileSelect, isLoading = false }: FileUploadProps)
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/gif"
+        accept="image/*"
         onChange={handleFileInputChange}
         style={{ display: 'none' }}
       />
@@ -76,7 +76,7 @@ export function FileUpload({ onFileSelect, isLoading = false }: FileUploadProps)
         {isLoading ? (
           <>
             <div className="loading-spinner"></div>
-            <p>Loading GIF...</p>
+            <p>Loading image...</p>
           </>
         ) : (
           <>
@@ -90,9 +90,9 @@ export function FileUpload({ onFileSelect, isLoading = false }: FileUploadProps)
                 />
               </svg>
             </div>
-            <h3>Drop your GIF here</h3>
+            <h3>Drop your image here</h3>
             <p>or click to browse</p>
-            <p className="file-info">Supports GIF files up to 50MB</p>
+            <p className="file-info">Supports GIF, PNG, JPG, WebP, and more</p>
           </>
         )}
       </div>

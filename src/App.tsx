@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { CanvasEditor } from './components/CanvasEditor';
 import { Timeline } from './components/Timeline';
 import { BackgroundRemovalPanel } from './components/Panels/BackgroundRemovalPanel';
+import { HistoryPanel } from './components/Panels/HistoryPanel';
 import { PreviewModal } from './components/PreviewModal';
+import { WorkspaceTabs } from './components/WorkspaceTabs/WorkspaceTabs';
 import { useGifDecoder } from './hooks/useGifDecoder';
 import { useGifEncoder } from './hooks/useGifEncoder';
 import { useFrameManager } from './hooks/useFrameManager';
 import { useBackgroundRemoval, type RemovalMode } from './hooks/useBackgroundRemoval';
+import { useWorkspaceManager } from './hooks/useWorkspaceManager';
+import { deserializeFrames } from './utils/serialization';
+import { isGifFile, convertImageToGif } from './utils/imageToGif';
 import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
@@ -16,9 +21,9 @@ function App() {
   const [isManualSelectionMode, setIsManualSelectionMode] = useState(false);
   const [selectionMask, setSelectionMask] = useState<Uint8ClampedArray | null>(null);
   const [showBackgroundRemoval, setShowBackgroundRemoval] = useState(false);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
   // Preview state
-  const [previewImageData, setPreviewImageData] = useState<ImageData | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const { decodeGif, isDecoding, error: decodeError } = useGifDecoder();
@@ -51,12 +56,97 @@ function App() {
     aiProgress,
   } = useBackgroundRemoval();
 
+  // Workspace manager
+  const workspaceManager = useWorkspaceManager();
+
+  // Sync workspace frames with frame manager when switching workspaces
+  useEffect(() => {
+    if (workspaceManager.activeWorkspace && workspaceManager.activeWorkspace.currentFrames.length > 0) {
+      const frames = deserializeFrames(workspaceManager.activeWorkspace.currentFrames);
+      setFrames(frames);
+      setCurrentFrameIndex(workspaceManager.activeWorkspace.currentFrameIndex);
+    } else if (workspaceManager.activeWorkspace && workspaceManager.activeWorkspace.currentFrames.length === 0) {
+      setFrames([]);
+      setCurrentFrameIndex(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceManager.activeWorkspace?.id]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      const isMac = navigator.userAgent.indexOf('Mac') !== -1;
+      const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+
+      // Undo: Ctrl/Cmd + Z
+      if (ctrlKey && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        if (workspaceManager.canUndo) {
+          const restoredFrames = await workspaceManager.undo();
+          if (restoredFrames) {
+            setFrames(restoredFrames);
+            if (workspaceManager.activeWorkspace) {
+              setCurrentFrameIndex(workspaceManager.activeWorkspace.currentFrameIndex);
+            }
+          }
+        }
+      }
+
+      // Redo: Ctrl/Cmd + Shift + Z
+      if (ctrlKey && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        if (workspaceManager.canRedo) {
+          const restoredFrames = await workspaceManager.redo();
+          if (restoredFrames) {
+            setFrames(restoredFrames);
+            if (workspaceManager.activeWorkspace) {
+              setCurrentFrameIndex(workspaceManager.activeWorkspace.currentFrameIndex);
+            }
+          }
+        }
+      }
+
+      // Save: Ctrl/Cmd + S
+      if (ctrlKey && e.key === 's') {
+        e.preventDefault();
+        if (workspaceManager.activeWorkspace && frames.length > 0) {
+          await workspaceManager.saveSnapshot(
+            frames,
+            currentFrameIndex,
+            'Manual save',
+            false
+          );
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [workspaceManager, frames, currentFrameIndex, setFrames, setCurrentFrameIndex]);
+
   const handleFileSelect = async (file: File) => {
     try {
-      const decodedGif = await decodeGif(file);
-      loadGif(decodedGif);
+      let decodedGif;
+
+      // Check if file is a GIF or needs conversion
+      if (isGifFile(file)) {
+        decodedGif = await decodeGif(file);
+      } else {
+        // Convert static image to GIF
+        decodedGif = await convertImageToGif(file);
+      }
+
+      // Create or load into workspace
+      if (!workspaceManager.activeWorkspace) {
+        const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
+        await workspaceManager.createWorkspace(fileName, decodedGif);
+      } else {
+        loadGif(decodedGif);
+        const description = isGifFile(file) ? 'GIF loaded' : 'Image loaded';
+        await workspaceManager.saveSnapshot(decodedGif.frames, 0, description, true);
+      }
     } catch (err) {
-      console.error('Failed to load GIF:', err);
+      console.error('Failed to load image:', err);
     }
   };
 
@@ -100,6 +190,16 @@ function App() {
         const newFrames = [...frames];
         newFrames[currentFrameIndex] = processedFrame;
         setFrames(newFrames);
+
+        // Auto-save
+        if (workspaceManager.activeWorkspace) {
+          await workspaceManager.saveSnapshot(
+            newFrames,
+            currentFrameIndex,
+            `Background removed (${mode})`,
+            true
+          );
+        }
       } else {
         const processedFrames = await removeBackgroundFromFrames(
           frames,
@@ -110,6 +210,16 @@ function App() {
           }
         );
         setFrames(processedFrames);
+
+        // Auto-save
+        if (workspaceManager.activeWorkspace) {
+          await workspaceManager.saveSnapshot(
+            processedFrames,
+            currentFrameIndex,
+            `Background removed from all frames (${mode})`,
+            true
+          );
+        }
       }
       setSelectionMask(null);
     } catch (err) {
@@ -122,49 +232,72 @@ function App() {
 
     try {
       const preview = await previewBackgroundRemoval(frames[currentFrameIndex], config);
-      setPreviewImageData(preview);
-      setShowPreviewModal(true);
-    } catch (err) {
-      console.error('Failed to generate preview:', err);
-    }
-  };
 
-  const handleApplyPreview = () => {
-    if (!previewImageData || !frames[currentFrameIndex]) return;
-
-    try {
-      // Create a new frame with the preview image data
+      // Create a preview frame with the preview image data
       const canvas = document.createElement('canvas');
-      canvas.width = previewImageData.width;
-      canvas.height = previewImageData.height;
+      canvas.width = preview.width;
+      canvas.height = preview.height;
       const ctx = canvas.getContext('2d');
 
       if (!ctx) {
         throw new Error('Could not get canvas context');
       }
 
-      ctx.putImageData(previewImageData, 0, 0);
+      ctx.putImageData(preview, 0, 0);
 
-      const processedFrame = {
+      const previewFrame = {
         ...frames[currentFrameIndex],
-        imageData: previewImageData,
+        imageData: preview,
         canvas,
       };
+
+      // Save preview to workspace
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.savePreview(currentFrameIndex, previewFrame);
+      }
+
+      setShowPreviewModal(true);
+    } catch (err) {
+      console.error('Failed to generate preview:', err);
+    }
+  };
+
+  const handleApplyPreview = async () => {
+    if (!frames[currentFrameIndex]) return;
+
+    try {
+      const previewData = workspaceManager.loadPreview();
+      if (!previewData) {
+        console.error('No preview data available');
+        return;
+      }
+
+      const processedFrame = previewData.previewFrame;
 
       const newFrames = [...frames];
       newFrames[currentFrameIndex] = processedFrame;
       setFrames(newFrames);
 
+      // Save snapshot
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          currentFrameIndex,
+          'Applied background removal preview',
+          false
+        );
+      }
+
       setShowPreviewModal(false);
-      setPreviewImageData(null);
+      await workspaceManager.clearPreview();
     } catch (err) {
       console.error('Failed to apply preview:', err);
     }
   };
 
-  const handleCancelPreview = () => {
+  const handleCancelPreview = async () => {
     setShowPreviewModal(false);
-    setPreviewImageData(null);
+    await workspaceManager.clearPreview();
   };
 
   const handleEnableManualMode = () => {
@@ -179,7 +312,7 @@ function App() {
     setSelectionMask(mask);
   };
 
-  const handleApplySelection = (_tolerance: number, invert: boolean) => {
+  const handleApplySelection = async (_tolerance: number, invert: boolean) => {
     if (!selectionMask || !frames[currentFrameIndex]) return;
 
     try {
@@ -189,24 +322,139 @@ function App() {
       setFrames(newFrames);
       setSelectionMask(null);
       setIsManualSelectionMode(false);
+
+      // Auto-save
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          currentFrameIndex,
+          'Applied manual selection',
+          true
+        );
+      }
     } catch (err) {
       console.error('Failed to apply selection:', err);
     }
   };
 
+  // Enhanced frame operations with auto-save
+  const handleDeleteFrame = async (index: number) => {
+    if (frames.length <= 1) return;
+    deleteFrame(index);
+
+    // Auto-save after state updates
+    setTimeout(async () => {
+      if (workspaceManager.activeWorkspace && frames.length > 1) {
+        const newFrames = frames.filter((_f, i) => i !== index);
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          Math.min(index, newFrames.length - 1),
+          'Deleted frame',
+          true
+        );
+      }
+    }, 100);
+  };
+
+  const handleDuplicateFrame = async (index: number) => {
+    duplicateFrame(index);
+
+    // Auto-save after state updates
+    setTimeout(async () => {
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          frames,
+          currentFrameIndex,
+          'Duplicated frame',
+          true
+        );
+      }
+    }, 100);
+  };
+
+  const handleReverseFrames = async () => {
+    reverseFrames();
+
+    // Auto-save after state updates
+    setTimeout(async () => {
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          frames,
+          currentFrameIndex,
+          'Reversed frames',
+          true
+        );
+      }
+    }, 100);
+  };
+
+  // Manual save handler
+  const handleManualSave = async () => {
+    if (workspaceManager.activeWorkspace && frames.length > 0) {
+      await workspaceManager.saveSnapshot(
+        frames,
+        currentFrameIndex,
+        'Manual save',
+        false
+      );
+    }
+  };
+
+  // Undo/Redo handlers
+  const handleUndo = async () => {
+    const restoredFrames = await workspaceManager.undo();
+    if (restoredFrames) {
+      setFrames(restoredFrames);
+      if (workspaceManager.activeWorkspace) {
+        setCurrentFrameIndex(workspaceManager.activeWorkspace.currentFrameIndex);
+      }
+    }
+  };
+
+  const handleRedo = async () => {
+    const restoredFrames = await workspaceManager.redo();
+    if (restoredFrames) {
+      setFrames(restoredFrames);
+      if (workspaceManager.activeWorkspace) {
+        setCurrentFrameIndex(workspaceManager.activeWorkspace.currentFrameIndex);
+      }
+    }
+  };
+
   const currentFrame = frames[currentFrameIndex] || null;
+
+  // Get preview data for modal
+  const previewData = workspaceManager.loadPreview();
+  const previewImageData = previewData?.previewFrame.imageData || null;
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🎨 FIGIF - GIF Editor</h1>
-        <p>Edit GIFs in your browser - no upload required</p>
+        <h1>🎨 FIGIF - Image & GIF Editor</h1>
+        <p>Edit GIFs and images in your browser - no upload required</p>
       </header>
 
-      {frames.length === 0 ? (
+      {/* Workspace Tabs */}
+      {workspaceManager.workspaces.length > 0 && (
+        <WorkspaceTabs
+          workspaces={workspaceManager.workspaces}
+          activeWorkspaceId={workspaceManager.activeWorkspaceId}
+          onSwitchWorkspace={workspaceManager.switchWorkspace}
+          onCloseWorkspace={workspaceManager.closeWorkspace}
+          onCreateWorkspace={async () => {
+            await workspaceManager.createWorkspace(`Workspace ${workspaceManager.workspaces.length + 1}`);
+          }}
+        />
+      )}
+
+      {frames.length === 0 && !workspaceManager.isLoading ? (
         <div className="upload-container">
           <FileUpload onFileSelect={handleFileSelect} isLoading={isDecoding} />
           {decodeError && <p className="error-message">{decodeError}</p>}
+        </div>
+      ) : workspaceManager.isLoading ? (
+        <div className="upload-container">
+          <p>Loading workspace...</p>
         </div>
       ) : (
         <div className="editor-container">
@@ -234,12 +482,39 @@ function App() {
             <div className="control-section">
               <h3>Frames</h3>
               <div className="control-group">
-                <button onClick={() => duplicateFrame(currentFrameIndex)}>Duplicate Frame</button>
-                <button onClick={() => deleteFrame(currentFrameIndex)} disabled={frames.length <= 1}>
+                <button onClick={() => handleDuplicateFrame(currentFrameIndex)}>Duplicate Frame</button>
+                <button onClick={() => handleDeleteFrame(currentFrameIndex)} disabled={frames.length <= 1}>
                   Delete Frame
                 </button>
-                <button onClick={reverseFrames}>Reverse All</button>
+                <button onClick={handleReverseFrames}>Reverse All</button>
               </div>
+            </div>
+
+            <div className="control-section">
+              <h3>Version Control</h3>
+              <div className="control-group">
+                <button
+                  onClick={() => setShowHistoryPanel(!showHistoryPanel)}
+                  className={showHistoryPanel ? 'active-toggle' : ''}
+                >
+                  {showHistoryPanel ? 'Hide' : 'Show'} History
+                </button>
+              </div>
+              {showHistoryPanel && workspaceManager.activeWorkspace && (
+                <div style={{ marginTop: '12px' }}>
+                  <HistoryPanel
+                    historyStack={workspaceManager.activeWorkspace.historyStack}
+                    currentHistoryIndex={workspaceManager.activeWorkspace.currentHistoryIndex}
+                    canUndo={workspaceManager.canUndo}
+                    canRedo={workspaceManager.canRedo}
+                    onUndo={handleUndo}
+                    onRedo={handleRedo}
+                    onSaveNow={handleManualSave}
+                    currentFrames={frames}
+                    currentFrameIndex={currentFrameIndex}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="control-section">
