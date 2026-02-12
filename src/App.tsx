@@ -23,7 +23,7 @@ function App() {
   const [zoom, setZoom] = useState(1);
   const [isManualSelectionMode, setIsManualSelectionMode] = useState(false);
   const [selectionMask, setSelectionMask] = useState<Uint8ClampedArray | null>(null);
-  const [selectionPoint, setSelectionPoint] = useState<{ x: number; y: number } | null>(null);
+  const [selectionPoints, setSelectionPoints] = useState<Array<{ x: number; y: number; tolerance: number }>>([]);
   const [manualTolerance, setManualTolerance] = useState(50);
   const [showBackgroundRemoval, setShowBackgroundRemoval] = useState(false);
   const [showResize, setShowResize] = useState(false);
@@ -312,15 +312,59 @@ function App() {
 
   const handleEnableManualMode = () => {
     setIsManualSelectionMode(true);
-    setSelectionMask(null);
+    handleClearSelections();
   };
 
   const handleCanvasClick = (x: number, y: number) => {
     if (!isManualSelectionMode || !frames[currentFrameIndex]) return;
 
-    const mask = selectWithMagicWand(frames[currentFrameIndex].imageData, x, y, manualTolerance);
-    setSelectionMask(mask);
-    setSelectionPoint({ x, y });
+    const newMask = selectWithMagicWand(frames[currentFrameIndex].imageData, x, y, manualTolerance);
+
+    // Combine with existing mask if there is one
+    const combinedMask = selectionMask
+      ? combineMasks(selectionMask, newMask)
+      : newMask;
+
+    setSelectionMask(combinedMask);
+    setSelectionPoints(prev => [...prev, { x, y, tolerance: manualTolerance }]);
+  };
+
+  // Helper to combine two masks (OR operation)
+  const combineMasks = (mask1: Uint8ClampedArray, mask2: Uint8ClampedArray): Uint8ClampedArray => {
+    const combined = new Uint8ClampedArray(mask1.length);
+    for (let i = 0; i < mask1.length; i++) {
+      combined[i] = mask1[i] === 255 || mask2[i] === 255 ? 255 : 0;
+    }
+    return combined;
+  };
+
+  const handleClearSelections = () => {
+    setSelectionMask(null);
+    setSelectionPoints([]);
+  };
+
+  const handleRemoveLastSelection = () => {
+    if (selectionPoints.length === 0) return;
+
+    const newPoints = selectionPoints.slice(0, -1);
+    setSelectionPoints(newPoints);
+
+    // Rebuild mask from remaining points
+    if (newPoints.length === 0) {
+      setSelectionMask(null);
+    } else if (frames[currentFrameIndex]) {
+      let combinedMask: Uint8ClampedArray | null = null;
+      for (const point of newPoints) {
+        const mask = selectWithMagicWand(
+          frames[currentFrameIndex].imageData,
+          point.x,
+          point.y,
+          point.tolerance
+        );
+        combinedMask = combinedMask ? combineMasks(combinedMask, mask) : mask;
+      }
+      setSelectionMask(combinedMask);
+    }
   };
 
   const handleApplySelection = async (_tolerance: number, invert: boolean) => {
@@ -331,7 +375,7 @@ function App() {
       const newFrames = [...frames];
       newFrames[currentFrameIndex] = processedFrame;
       setFrames(newFrames);
-      setSelectionMask(null);
+      handleClearSelections();
       setIsManualSelectionMode(false);
 
       // Auto-save
@@ -339,7 +383,7 @@ function App() {
         await workspaceManager.saveSnapshot(
           newFrames,
           currentFrameIndex,
-          'Applied manual selection',
+          `Applied manual selection (${selectionPoints.length} area${selectionPoints.length !== 1 ? 's' : ''})`,
           true
         );
       }
@@ -349,8 +393,8 @@ function App() {
   };
 
   const handleApplyToAllFrames = async (tolerance: number, invert: boolean) => {
-    if (!selectionPoint || frames.length === 0) {
-      console.error('No selection point saved. Click on the background first.');
+    if (selectionPoints.length === 0 || frames.length === 0) {
+      console.error('No selection points saved. Click on the background first.');
       return;
     }
 
@@ -358,15 +402,22 @@ function App() {
       const processedFrames: typeof frames = [];
 
       for (const frame of frames) {
-        // Reapply magic wand at the same location with the same tolerance on each frame
-        const mask = selectWithMagicWand(frame.imageData, selectionPoint.x, selectionPoint.y, tolerance);
-        const processedFrame = applyMask(frame, mask, invert);
-        processedFrames.push(processedFrame);
+        // Reapply magic wand at all saved locations and combine masks
+        let combinedMask: Uint8ClampedArray | null = null;
+
+        for (const point of selectionPoints) {
+          const mask = selectWithMagicWand(frame.imageData, point.x, point.y, point.tolerance);
+          combinedMask = combinedMask ? combineMasks(combinedMask, mask) : mask;
+        }
+
+        if (combinedMask) {
+          const processedFrame = applyMask(frame, combinedMask, invert);
+          processedFrames.push(processedFrame);
+        }
       }
 
       setFrames(processedFrames);
-      setSelectionMask(null);
-      setSelectionPoint(null);
+      handleClearSelections();
       setIsManualSelectionMode(false);
 
       // Auto-save
@@ -374,7 +425,7 @@ function App() {
         await workspaceManager.saveSnapshot(
           processedFrames,
           currentFrameIndex,
-          `Applied manual selection to all frames (tolerance: ${tolerance})`,
+          `Applied manual selection to all frames (${selectionPoints.length} area${selectionPoints.length !== 1 ? 's' : ''})`,
           true
         );
       }
@@ -428,6 +479,80 @@ function App() {
           frames,
           currentFrameIndex,
           'Reversed frames',
+          true
+        );
+      }
+    }, 100);
+  };
+
+  const handleRemoveEveryOtherFrame = async () => {
+    if (frames.length <= 1) return;
+
+    // Keep frames at even indices (0, 2, 4, 6...)
+    const filteredFrames = frames.filter((_, index) => index % 2 === 0);
+    setFrames(filteredFrames);
+
+    // Adjust current frame index if needed
+    const newIndex = Math.min(Math.floor(currentFrameIndex / 2), filteredFrames.length - 1);
+    setCurrentFrameIndex(newIndex);
+
+    // Auto-save
+    setTimeout(async () => {
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          filteredFrames,
+          newIndex,
+          `Removed every other frame (${frames.length} → ${filteredFrames.length})`,
+          true
+        );
+      }
+    }, 100);
+  };
+
+  const handleDuplicateAllFrames = async () => {
+    if (frames.length === 0) return;
+
+    // Duplicate each frame in place: [1,2,3] -> [1,1,2,2,3,3]
+    const duplicatedFrames: typeof frames = [];
+    frames.forEach(frame => {
+      duplicatedFrames.push(frame);
+      duplicatedFrames.push({ ...frame });
+    });
+
+    setFrames(duplicatedFrames);
+    setCurrentFrameIndex(currentFrameIndex * 2);
+
+    // Auto-save
+    setTimeout(async () => {
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          duplicatedFrames,
+          currentFrameIndex * 2,
+          `Duplicated all frames (${frames.length} → ${duplicatedFrames.length})`,
+          true
+        );
+      }
+    }, 100);
+  };
+
+  const handleKeepEveryNthFrame = async (n: number) => {
+    if (frames.length <= 1 || n < 2) return;
+
+    // Keep frames at indices 0, n, 2n, 3n...
+    const filteredFrames = frames.filter((_, index) => index % n === 0);
+    setFrames(filteredFrames);
+
+    // Adjust current frame index
+    const newIndex = Math.min(Math.floor(currentFrameIndex / n), filteredFrames.length - 1);
+    setCurrentFrameIndex(newIndex);
+
+    // Auto-save
+    setTimeout(async () => {
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          filteredFrames,
+          newIndex,
+          `Kept every ${n}th frame (${frames.length} → ${filteredFrames.length})`,
           true
         );
       }
@@ -599,6 +724,40 @@ function App() {
                 </button>
                 <button onClick={handleReverseFrames}>Reverse All</button>
               </div>
+              <div className="control-group" style={{ marginTop: '8px' }}>
+                <button onClick={handleRemoveEveryOtherFrame} disabled={frames.length <= 1}>
+                  Remove Every Other
+                </button>
+                <button onClick={handleDuplicateAllFrames} disabled={frames.length === 0}>
+                  Duplicate All
+                </button>
+              </div>
+              <div className="control-group" style={{ marginTop: '8px', gap: '4px' }}>
+                <button
+                  onClick={() => handleKeepEveryNthFrame(3)}
+                  disabled={frames.length <= 2}
+                  title="Keep every 3rd frame"
+                  style={{ fontSize: '13px' }}
+                >
+                  Keep 1/3
+                </button>
+                <button
+                  onClick={() => handleKeepEveryNthFrame(4)}
+                  disabled={frames.length <= 3}
+                  title="Keep every 4th frame"
+                  style={{ fontSize: '13px' }}
+                >
+                  Keep 1/4
+                </button>
+                <button
+                  onClick={() => handleKeepEveryNthFrame(5)}
+                  disabled={frames.length <= 4}
+                  title="Keep every 5th frame"
+                  style={{ fontSize: '13px' }}
+                >
+                  Keep 1/5
+                </button>
+              </div>
             </div>
 
             <div className="control-section">
@@ -669,9 +828,12 @@ function App() {
                     onEnableManualMode={handleEnableManualMode}
                     onApplySelection={handleApplySelection}
                     onApplyToAllFrames={handleApplyToAllFrames}
+                    onClearSelections={handleClearSelections}
+                    onRemoveLastSelection={handleRemoveLastSelection}
                     onPreview={handlePreview}
                     tolerance={manualTolerance}
                     onToleranceChange={setManualTolerance}
+                    selectionCount={selectionPoints.length}
                     isProcessing={isBgProcessing}
                     progress={bgProgress}
                     isManualMode={isManualSelectionMode}

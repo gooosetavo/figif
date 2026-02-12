@@ -9,9 +9,12 @@ interface BackgroundRemovalPanelProps {
   onEnableManualMode: () => void;
   onApplySelection: (tolerance: number, invert: boolean) => void;
   onApplyToAllFrames: (tolerance: number, invert: boolean) => void;
+  onClearSelections: () => void;
+  onRemoveLastSelection: () => void;
   onPreview: (config: AIBackgroundRemovalConfig) => void;
   tolerance: number;
   onToleranceChange: (tolerance: number) => void;
+  selectionCount: number;
   isProcessing: boolean;
   progress: number;
   isManualMode: boolean;
@@ -25,9 +28,12 @@ export function BackgroundRemovalPanel({
   onEnableManualMode,
   onApplySelection,
   onApplyToAllFrames,
+  onClearSelections,
+  onRemoveLastSelection,
   onPreview,
   tolerance,
   onToleranceChange,
+  selectionCount,
   isProcessing,
   progress,
   isManualMode,
@@ -236,17 +242,44 @@ export function BackgroundRemovalPanel({
           {isManualMode && (
             <div className="manual-instructions">
               <p>👆 Click on the background area in the canvas above</p>
-              {useReapplyMode && (
+              {selectionCount > 0 && (
+                <p style={{ marginTop: '8px', fontSize: '12px', fontWeight: 'bold', color: '#667eea' }}>
+                  ✓ {selectionCount} area{selectionCount !== 1 ? 's' : ''} selected
+                </p>
+              )}
+              {useReapplyMode && selectionCount > 0 && (
                 <p style={{ marginTop: '8px', fontSize: '12px' }}>
-                  ℹ️ Selection will be reapplied at the same pixel location on each frame
+                  ℹ️ Selection will be reapplied at {selectionCount} location{selectionCount !== 1 ? 's' : ''} on each frame
                 </p>
               )}
             </div>
           )}
 
+          {/* Selection management buttons */}
+          {isManualMode && selectionCount > 0 && (
+            <div className="button-group-vertical" style={{ gap: '4px' }}>
+              <button
+                onClick={onRemoveLastSelection}
+                disabled={isProcessing}
+                className="action-button"
+                style={{ background: '#ed8936', fontSize: '13px', padding: '6px 12px' }}
+              >
+                ← Remove Last Selection
+              </button>
+              <button
+                onClick={onClearSelections}
+                disabled={isProcessing}
+                className="action-button"
+                style={{ background: '#e53e3e', fontSize: '13px', padding: '6px 12px' }}
+              >
+                ✕ Clear All Selections
+              </button>
+            </div>
+          )}
+
           <button
             onClick={() => onApplySelection(tolerance, invertSelection)}
-            disabled={!isManualMode || isProcessing}
+            disabled={!isManualMode || isProcessing || selectionCount === 0}
             className="action-button"
           >
             Apply to Current Frame
@@ -254,7 +287,7 @@ export function BackgroundRemovalPanel({
 
           <button
             onClick={() => onApplyToAllFrames(tolerance, invertSelection)}
-            disabled={!isManualMode || isProcessing}
+            disabled={!isManualMode || isProcessing || selectionCount === 0}
             className="action-button warning"
           >
             {useReapplyMode ? 'Reapply to All Frames' : 'Apply to All Frames'}
