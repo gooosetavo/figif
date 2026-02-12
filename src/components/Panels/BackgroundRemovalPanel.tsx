@@ -8,7 +8,10 @@ interface BackgroundRemovalPanelProps {
   onRemoveBackground: (mode: RemovalMode, frames: 'current' | 'all', config?: AIBackgroundRemovalConfig) => void;
   onEnableManualMode: () => void;
   onApplySelection: (tolerance: number, invert: boolean) => void;
+  onApplyToAllFrames: (tolerance: number, invert: boolean) => void;
   onPreview: (config: AIBackgroundRemovalConfig) => void;
+  tolerance: number;
+  onToleranceChange: (tolerance: number) => void;
   isProcessing: boolean;
   progress: number;
   isManualMode: boolean;
@@ -21,7 +24,10 @@ export function BackgroundRemovalPanel({
   onRemoveBackground,
   onEnableManualMode,
   onApplySelection,
+  onApplyToAllFrames,
   onPreview,
+  tolerance,
+  onToleranceChange,
   isProcessing,
   progress,
   isManualMode,
@@ -30,8 +36,8 @@ export function BackgroundRemovalPanel({
   currentFrame,
 }: BackgroundRemovalPanelProps) {
   const [mode, setMode] = useState<RemovalMode>('ai');
-  const [tolerance, setTolerance] = useState(32);
   const [invertSelection, setInvertSelection] = useState(false);
+  const [useReapplyMode, setUseReapplyMode] = useState(true);
 
   // New AI configuration state
   const [selectedModel, setSelectedModel] = useState<AIModel>('isnet_fp16');
@@ -76,8 +82,8 @@ export function BackgroundRemovalPanel({
           {/* AI Model Configuration */}
           <div className="ai-config-section">
             <div className="control-item">
-              <label>
-                Model Quality
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                <label style={{ margin: 0, flex: 1 }}>Model Quality</label>
                 <button
                   className="info-button"
                   onClick={() => setShowModelInfo(!showModelInfo)}
@@ -85,7 +91,7 @@ export function BackgroundRemovalPanel({
                 >
                   ?
                 </button>
-              </label>
+              </div>
               <select
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value as AIModel)}
@@ -199,7 +205,7 @@ export function BackgroundRemovalPanel({
                 min="1"
                 max="100"
                 value={tolerance}
-                onChange={(e) => setTolerance(Number(e.target.value))}
+                onChange={(e) => onToleranceChange(Number(e.target.value))}
                 className="slider"
               />
             </label>
@@ -216,9 +222,25 @@ export function BackgroundRemovalPanel({
             </label>
           </div>
 
+          <div className="control-item">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={useReapplyMode}
+                onChange={(e) => setUseReapplyMode(e.target.checked)}
+              />
+              Reapply at same location on each frame (recommended for text GIFs)
+            </label>
+          </div>
+
           {isManualMode && (
             <div className="manual-instructions">
               <p>👆 Click on the background area in the canvas above</p>
+              {useReapplyMode && (
+                <p style={{ marginTop: '8px', fontSize: '12px' }}>
+                  ℹ️ Selection will be reapplied at the same pixel location on each frame
+                </p>
+              )}
             </div>
           )}
 
@@ -231,11 +253,11 @@ export function BackgroundRemovalPanel({
           </button>
 
           <button
-            onClick={() => onRemoveBackground('manual', 'all')}
+            onClick={() => onApplyToAllFrames(tolerance, invertSelection)}
             disabled={!isManualMode || isProcessing}
             className="action-button warning"
           >
-            Apply to All Frames
+            {useReapplyMode ? 'Reapply to All Frames' : 'Apply to All Frames'}
           </button>
         </div>
       )}

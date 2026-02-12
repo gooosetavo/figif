@@ -190,14 +190,16 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
         await deleteWorkspaceDB(id);
         removeWorkspaceFromIndex(id);
 
-        setWorkspaces((prev) => prev.filter((w) => w.id !== id));
+        // Calculate remaining workspaces before updating state
+        const remainingWorkspaces = workspaces.filter((w) => w.id !== id);
+        setWorkspaces(remainingWorkspaces);
 
         if (activeWorkspace?.id === id) {
-          const remainingWorkspaces = workspaces.filter((w) => w.id !== id);
           if (remainingWorkspaces.length > 0) {
             await switchWorkspace(remainingWorkspaces[0].id);
           } else {
             setActiveWorkspace(null);
+            setActiveWorkspaceLS(''); // Clear active workspace from localStorage
           }
         }
       } catch (error) {

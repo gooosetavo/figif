@@ -23,6 +23,8 @@ function App() {
   const [zoom, setZoom] = useState(1);
   const [isManualSelectionMode, setIsManualSelectionMode] = useState(false);
   const [selectionMask, setSelectionMask] = useState<Uint8ClampedArray | null>(null);
+  const [selectionPoint, setSelectionPoint] = useState<{ x: number; y: number } | null>(null);
+  const [manualTolerance, setManualTolerance] = useState(50);
   const [showBackgroundRemoval, setShowBackgroundRemoval] = useState(false);
   const [showResize, setShowResize] = useState(false);
   const [showCrop, setShowCrop] = useState(false);
@@ -316,8 +318,9 @@ function App() {
   const handleCanvasClick = (x: number, y: number) => {
     if (!isManualSelectionMode || !frames[currentFrameIndex]) return;
 
-    const mask = selectWithMagicWand(frames[currentFrameIndex].imageData, x, y, 32);
+    const mask = selectWithMagicWand(frames[currentFrameIndex].imageData, x, y, manualTolerance);
     setSelectionMask(mask);
+    setSelectionPoint({ x, y });
   };
 
   const handleApplySelection = async (_tolerance: number, invert: boolean) => {
@@ -342,6 +345,41 @@ function App() {
       }
     } catch (err) {
       console.error('Failed to apply selection:', err);
+    }
+  };
+
+  const handleApplyToAllFrames = async (tolerance: number, invert: boolean) => {
+    if (!selectionPoint || frames.length === 0) {
+      console.error('No selection point saved. Click on the background first.');
+      return;
+    }
+
+    try {
+      const processedFrames: typeof frames = [];
+
+      for (const frame of frames) {
+        // Reapply magic wand at the same location with the same tolerance on each frame
+        const mask = selectWithMagicWand(frame.imageData, selectionPoint.x, selectionPoint.y, tolerance);
+        const processedFrame = applyMask(frame, mask, invert);
+        processedFrames.push(processedFrame);
+      }
+
+      setFrames(processedFrames);
+      setSelectionMask(null);
+      setSelectionPoint(null);
+      setIsManualSelectionMode(false);
+
+      // Auto-save
+      if (workspaceManager.activeWorkspace) {
+        await workspaceManager.saveSnapshot(
+          processedFrames,
+          currentFrameIndex,
+          `Applied manual selection to all frames (tolerance: ${tolerance})`,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('Failed to apply selection to all frames:', err);
     }
   };
 
@@ -519,7 +557,10 @@ function App() {
 
       {frames.length === 0 && !workspaceManager.isLoading ? (
         <div className="upload-container">
-          <FileUpload onFileSelect={handleFileSelect} isLoading={isDecoding} />
+          <FileUpload
+            onFileSelect={handleFileSelect}
+            isLoading={isDecoding || workspaceManager.isCreatingWorkspace}
+          />
           {decodeError && <p className="error-message">{decodeError}</p>}
         </div>
       ) : workspaceManager.isLoading ? (
@@ -627,7 +668,10 @@ function App() {
                     onRemoveBackground={handleRemoveBackground}
                     onEnableManualMode={handleEnableManualMode}
                     onApplySelection={handleApplySelection}
+                    onApplyToAllFrames={handleApplyToAllFrames}
                     onPreview={handlePreview}
+                    tolerance={manualTolerance}
+                    onToleranceChange={setManualTolerance}
                     isProcessing={isBgProcessing}
                     progress={bgProgress}
                     isManualMode={isManualSelectionMode}
