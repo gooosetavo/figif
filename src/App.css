@@ -77,7 +77,7 @@
 }
 
 .right-panel.collapsed {
-  transform: translateX(100%);
+  transform: translateX(calc(100% - 40px));
   position: absolute;
   right: 0;
   top: 0;
@@ -85,8 +85,8 @@
 }
 
 .right-panel-toggle {
-  position: fixed;
-  right: 320px;
+  position: absolute;
+  left: -40px;
   top: 50%;
   transform: translateY(-50%);
   background: white;
@@ -97,7 +97,7 @@
   border-radius: 6px 0 0 6px;
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
   z-index: 100;
-  transition: right 0.3s ease, transform 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .right-panel-toggle:hover {
@@ -105,10 +105,9 @@
 }
 
 .right-panel.collapsed .right-panel-toggle {
-  right: 0;
   transform: translateY(-50%) rotate(180deg);
-  border-left: none;
-  border-right: 1px solid #e2e8f0;
+  border-left: 1px solid #e2e8f0;
+  border-right: none;
   border-radius: 0 6px 6px 0;
 }
 

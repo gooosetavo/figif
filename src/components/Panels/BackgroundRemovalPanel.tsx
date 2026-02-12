@@ -4,11 +4,13 @@ import type { AIBackgroundRemovalConfig, AIModel, AIDevice, GifFrame } from '../
 import { getModelInfo } from '../../utils/backgroundRemoval';
 import './BackgroundRemovalPanel.css';
 
+export type GifEffect = 'none' | 'intensifies' | 'party' | 'on-drugs';
+
 interface BackgroundRemovalPanelProps {
   onRemoveBackground: (mode: RemovalMode, frames: 'current' | 'all', config?: AIBackgroundRemovalConfig) => void;
   onEnableManualMode: () => void;
-  onApplySelection: (tolerance: number, invert: boolean) => void;
-  onApplyToAllFrames: (tolerance: number, invert: boolean) => void;
+  onApplySelection: (tolerance: number, invert: boolean, effect: GifEffect) => void;
+  onApplyToAllFrames: (tolerance: number, invert: boolean, effect: GifEffect) => void;
   onClearSelections: () => void;
   onRemoveLastSelection: () => void;
   onPreview: (config: AIBackgroundRemovalConfig) => void;
@@ -44,6 +46,7 @@ export function BackgroundRemovalPanel({
   const [mode, setMode] = useState<RemovalMode>('ai');
   const [invertSelection, setInvertSelection] = useState(false);
   const [useReapplyMode, setUseReapplyMode] = useState(true);
+  const [applyEffect, setApplyEffect] = useState<'none' | 'intensifies' | 'party' | 'on-drugs'>('none');
 
   // New AI configuration state
   const [selectedModel, setSelectedModel] = useState<AIModel>('isnet_fp16');
@@ -277,8 +280,32 @@ export function BackgroundRemovalPanel({
             </div>
           )}
 
+          {/* Effect Selection */}
+          <div className="control-item">
+            <label>
+              Apply Effect (for meme GIFs)
+              <select
+                value={applyEffect}
+                onChange={(e) => setApplyEffect(e.target.value as GifEffect)}
+                disabled={isProcessing}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  marginTop: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #cbd5e0',
+                }}
+              >
+                <option value="none">None</option>
+                <option value="intensifies">🔥 Intensifies (shake/vibrate)</option>
+                <option value="party">🎉 Party (color cycling)</option>
+                <option value="on-drugs">🌀 On-Drugs (chaos mode)</option>
+              </select>
+            </label>
+          </div>
+
           <button
-            onClick={() => onApplySelection(tolerance, invertSelection)}
+            onClick={() => onApplySelection(tolerance, invertSelection, applyEffect)}
             disabled={!isManualMode || isProcessing || selectionCount === 0}
             className="action-button"
           >
@@ -286,7 +313,7 @@ export function BackgroundRemovalPanel({
           </button>
 
           <button
-            onClick={() => onApplyToAllFrames(tolerance, invertSelection)}
+            onClick={() => onApplyToAllFrames(tolerance, invertSelection, applyEffect)}
             disabled={!isManualMode || isProcessing || selectionCount === 0}
             className="action-button warning"
           >

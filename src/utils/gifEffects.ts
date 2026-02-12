@@ -1,0 +1,164 @@
+import type { GifFrame } from '../types/gif.types';
+
+/**
+ * "Intensifies" effect - Makes the subject shake/vibrate
+ * Shifts non-transparent pixels randomly every other frame
+ */
+export function applyIntensifiesEffect(frames: GifFrame[], intensity: number = 3): GifFrame[] {
+  return frames.map((frame, index) => {
+    // Alternate direction every other frame for shaking effect
+    const direction = index % 2 === 0 ? 1 : -1;
+    const offsetX = Math.floor(Math.random() * intensity * 2 - intensity) * direction;
+    const offsetY = Math.floor(Math.random() * intensity * 2 - intensity) * direction;
+
+    return shiftFrame(frame, offsetX, offsetY);
+  });
+}
+
+/**
+ * "Party" effect - Cycles background colors rapidly
+ * Changes transparent/removed areas to vibrant colors
+ */
+export function applyPartyEffect(frames: GifFrame[]): GifFrame[] {
+  const colors = [
+    { r: 255, g: 0, b: 0 },     // Red
+    { r: 255, g: 128, b: 0 },   // Orange
+    { r: 255, g: 255, b: 0 },   // Yellow
+    { r: 0, g: 255, b: 0 },     // Green
+    { r: 0, g: 255, b: 255 },   // Cyan
+    { r: 0, g: 0, b: 255 },     // Blue
+    { r: 255, g: 0, b: 255 },   // Magenta
+  ];
+
+  return frames.map((frame, index) => {
+    const color = colors[index % colors.length];
+    return colorizeTransparent(frame, color);
+  });
+}
+
+/**
+ * "On-Drugs" effect - Combines party, intensifies, and rotation
+ */
+export function applyOnDrugsEffect(frames: GifFrame[]): GifFrame[] {
+  // First apply party effect
+  let processedFrames = applyPartyEffect(frames);
+
+  // Then apply intensifies
+  processedFrames = applyIntensifiesEffect(processedFrames, 4);
+
+  // Then apply random rotation
+  processedFrames = processedFrames.map((frame, index) => {
+    const angle = (Math.random() - 0.5) * 15; // ±7.5 degrees
+    return rotateFrame(frame, angle);
+  });
+
+  return processedFrames;
+}
+
+/**
+ * Shifts a frame by the given offset
+ */
+function shiftFrame(frame: GifFrame, offsetX: number, offsetY: number): GifFrame {
+  const { width, height } = frame.imageData;
+  const sourceData = frame.imageData.data;
+  const newImageData = new ImageData(width, height);
+  const newData = newImageData.data;
+
+  // Copy pixels with offset, preserving transparency
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const sourceX = x - offsetX;
+      const sourceY = y - offsetY;
+
+      // Check if source pixel is within bounds
+      if (sourceX >= 0 && sourceX < width && sourceY >= 0 && sourceY < height) {
+        const sourceIndex = (sourceY * width + sourceX) * 4;
+        const targetIndex = (y * width + x) * 4;
+
+        newData[targetIndex] = sourceData[sourceIndex];         // R
+        newData[targetIndex + 1] = sourceData[sourceIndex + 1]; // G
+        newData[targetIndex + 2] = sourceData[sourceIndex + 2]; // B
+        newData[targetIndex + 3] = sourceData[sourceIndex + 3]; // A
+      }
+    }
+  }
+
+  // Create new canvas with shifted data
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.putImageData(newImageData, 0, 0);
+  }
+
+  return {
+    ...frame,
+    imageData: newImageData,
+    canvas,
+  };
+}
+
+/**
+ * Colorizes transparent pixels with the given color
+ */
+function colorizeTransparent(frame: GifFrame, color: { r: number; g: number; b: number }): GifFrame {
+  const { width, height } = frame.imageData;
+  const sourceData = frame.imageData.data;
+  const newImageData = new ImageData(new Uint8ClampedArray(sourceData), width, height);
+  const newData = newImageData.data;
+
+  for (let i = 0; i < newData.length; i += 4) {
+    // If pixel is transparent or nearly transparent
+    if (newData[i + 3] < 128) {
+      newData[i] = color.r;
+      newData[i + 1] = color.g;
+      newData[i + 2] = color.b;
+      newData[i + 3] = 255; // Make it opaque
+    }
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.putImageData(newImageData, 0, 0);
+  }
+
+  return {
+    ...frame,
+    imageData: newImageData,
+    canvas,
+  };
+}
+
+/**
+ * Rotates a frame by the given angle (in degrees)
+ */
+function rotateFrame(frame: GifFrame, angleDegrees: number): GifFrame {
+  const { width, height } = frame.imageData;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) return frame;
+
+  // Move to center, rotate, move back
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate((angleDegrees * Math.PI) / 180);
+  ctx.translate(-width / 2, -height / 2);
+
+  // Draw the original image
+  ctx.putImageData(frame.imageData, 0, 0);
+
+  // Get the rotated image data
+  const rotatedImageData = ctx.getImageData(0, 0, width, height);
+
+  return {
+    ...frame,
+    imageData: rotatedImageData,
+    canvas,
+  };
+}

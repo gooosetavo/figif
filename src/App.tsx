@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { CanvasEditor } from './components/CanvasEditor';
 import { Timeline } from './components/Timeline';
-import { BackgroundRemovalPanel } from './components/Panels/BackgroundRemovalPanel';
+import { BackgroundRemovalPanel, type GifEffect } from './components/Panels/BackgroundRemovalPanel';
 import { HistoryPanel } from './components/Panels/HistoryPanel';
 import { ResizePanel } from './components/Panels/ResizePanel';
 import { CropPanel, type CropSelection } from './components/Panels/CropPanel';
@@ -16,6 +16,7 @@ import { useWorkspaceManager } from './hooks/useWorkspaceManager';
 import { deserializeFrames } from './utils/serialization';
 import { isGifFile, convertImageToGif } from './utils/imageToGif';
 import { resizeFrames, cropFrames } from './utils/imageTransform';
+import { applyIntensifiesEffect, applyPartyEffect, applyOnDrugsEffect } from './utils/gifEffects';
 import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
@@ -367,7 +368,7 @@ function App() {
     }
   };
 
-  const handleApplySelection = async (_tolerance: number, invert: boolean) => {
+  const handleApplySelection = async (_tolerance: number, invert: boolean, effect: GifEffect) => {
     if (!selectionMask || !frames[currentFrameIndex]) return;
 
     try {
@@ -383,7 +384,7 @@ function App() {
         await workspaceManager.saveSnapshot(
           newFrames,
           currentFrameIndex,
-          `Applied manual selection (${selectionPoints.length} area${selectionPoints.length !== 1 ? 's' : ''})`,
+          `Applied manual selection (${selectionPoints.length} area${selectionPoints.length !== 1 ? 's' : ''})${effect !== 'none' ? ` + ${effect}` : ''}`,
           true
         );
       }
@@ -392,14 +393,14 @@ function App() {
     }
   };
 
-  const handleApplyToAllFrames = async (_tolerance: number, invert: boolean) => {
+  const handleApplyToAllFrames = async (_tolerance: number, invert: boolean, effect: GifEffect) => {
     if (selectionPoints.length === 0 || frames.length === 0) {
       console.error('No selection points saved. Click on the background first.');
       return;
     }
 
     try {
-      const processedFrames: typeof frames = [];
+      let processedFrames: typeof frames = [];
 
       for (const frame of frames) {
         // Reapply magic wand at all saved locations and combine masks
@@ -417,6 +418,15 @@ function App() {
         }
       }
 
+      // Apply effects if selected
+      if (effect === 'intensifies') {
+        processedFrames = applyIntensifiesEffect(processedFrames);
+      } else if (effect === 'party') {
+        processedFrames = applyPartyEffect(processedFrames);
+      } else if (effect === 'on-drugs') {
+        processedFrames = applyOnDrugsEffect(processedFrames);
+      }
+
       setFrames(processedFrames);
       handleClearSelections();
       setIsManualSelectionMode(false);
@@ -426,7 +436,7 @@ function App() {
         await workspaceManager.saveSnapshot(
           processedFrames,
           currentFrameIndex,
-          `Applied manual selection to all frames (${selectionPoints.length} area${selectionPoints.length !== 1 ? 's' : ''})`,
+          `Applied manual selection to all frames (${selectionPoints.length} area${selectionPoints.length !== 1 ? 's' : ''})${effect !== 'none' ? ` + ${effect}` : ''}`,
           true
         );
       }
