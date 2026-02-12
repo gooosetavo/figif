@@ -392,7 +392,7 @@ function App() {
     }
   };
 
-  const handleApplyToAllFrames = async (tolerance: number, invert: boolean) => {
+  const handleApplyToAllFrames = async (_tolerance: number, invert: boolean) => {
     if (selectionPoints.length === 0 || frames.length === 0) {
       console.error('No selection points saved. Click on the background first.');
       return;
@@ -403,6 +403,7 @@ function App() {
 
       for (const frame of frames) {
         // Reapply magic wand at all saved locations and combine masks
+        // Note: Using each point's stored tolerance value, not the current tolerance slider
         let combinedMask: Uint8ClampedArray | null = null;
 
         for (const point of selectionPoints) {

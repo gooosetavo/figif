@@ -72,6 +72,7 @@
   flex-direction: column;
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
+  position: relative;
   transition: transform 0.3s ease;
 }
 
@@ -84,19 +85,19 @@
 }
 
 .right-panel-toggle {
-  position: absolute;
-  right: 0;
+  position: fixed;
+  right: 320px;
   top: 50%;
-  transform: translateY(-50%) translateX(100%);
+  transform: translateY(-50%);
   background: white;
   border: 1px solid #e2e8f0;
-  border-left: none;
+  border-right: none;
   padding: 12px 8px;
   cursor: pointer;
-  border-radius: 0 6px 6px 0;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-  z-index: 10;
-  transition: all 0.2s ease;
+  border-radius: 6px 0 0 6px;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+  z-index: 100;
+  transition: right 0.3s ease, transform 0.2s ease;
 }
 
 .right-panel-toggle:hover {
@@ -104,10 +105,11 @@
 }
 
 .right-panel.collapsed .right-panel-toggle {
-  transform: translateY(-50%) translateX(-100%) rotate(180deg);
-  border-left: 1px solid #e2e8f0;
-  border-right: none;
-  border-radius: 6px 0 0 6px;
+  right: 0;
+  transform: translateY(-50%) rotate(180deg);
+  border-left: none;
+  border-right: 1px solid #e2e8f0;
+  border-radius: 0 6px 6px 0;
 }
 
 .right-panel-header {
@@ -289,6 +291,7 @@
     border-left: none;
     border-top: 1px solid #e2e8f0;
     max-height: 50vh;
+    position: relative;
   }
 
   .right-panel.collapsed {
@@ -301,15 +304,21 @@
   }
 
   .right-panel-toggle {
-    top: 0;
-    right: 50%;
-    transform: translateX(50%) translateY(-100%);
+    position: fixed;
+    top: auto;
+    bottom: 50vh;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) translateY(100%);
     border-radius: 6px 6px 0 0;
     border-bottom: none;
+    border-top: 1px solid #e2e8f0;
+    transition: bottom 0.3s ease, transform 0.2s ease;
   }
 
   .right-panel.collapsed .right-panel-toggle {
-    transform: translateX(50%) translateY(100%) rotate(180deg);
+    bottom: 0;
+    transform: translateX(-50%) translateY(-100%) rotate(180deg);
     border-bottom: 1px solid #e2e8f0;
     border-top: none;
   }
