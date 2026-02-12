@@ -51,7 +51,7 @@ export function PreviewModal({
     <div className="preview-modal-overlay" onClick={onCancel}>
       <div className="preview-modal" onClick={(e) => e.stopPropagation()}>
         <div className="preview-header">
-          <h3>Preview Background Removal</h3>
+          <h3>Preview Background Selection</h3>
           <button className="close-button" onClick={onCancel}>×</button>
         </div>
 

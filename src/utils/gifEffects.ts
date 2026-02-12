@@ -5,7 +5,10 @@ import type { GifFrame } from '../types/gif.types';
  * Shifts non-transparent pixels randomly every other frame
  */
 export function applyIntensifiesEffect(frames: GifFrame[], intensity: number = 3): GifFrame[] {
-  return frames.map((frame, index) => {
+  // Add padding first to prevent clipping during shake
+  const paddedFrames = frames.map(frame => addPadding(frame));
+
+  return paddedFrames.map((frame, index) => {
     // Alternate direction every other frame for shaking effect
     const direction = index % 2 === 0 ? 1 : -1;
     const offsetX = Math.floor(Math.random() * intensity * 2 - intensity) * direction;
@@ -40,13 +43,21 @@ export function applyPartyEffect(frames: GifFrame[]): GifFrame[] {
  * "On-Drugs" effect - Combines party, intensifies, and rotation
  */
 export function applyOnDrugsEffect(frames: GifFrame[]): GifFrame[] {
-  // First apply party effect
-  let processedFrames = applyPartyEffect(frames);
+  // Add padding first to prevent clipping during shake and rotation
+  let processedFrames = frames.map(frame => addPadding(frame));
 
-  // Then apply intensifies
-  processedFrames = applyIntensifiesEffect(processedFrames, 4);
+  // Apply party effect
+  processedFrames = applyPartyEffect(processedFrames);
 
-  // Then apply random rotation
+  // Apply intensifies (without additional padding since we already added it)
+  processedFrames = processedFrames.map((frame, index) => {
+    const direction = index % 2 === 0 ? 1 : -1;
+    const offsetX = Math.floor(Math.random() * 4 * 2 - 4) * direction;
+    const offsetY = Math.floor(Math.random() * 4 * 2 - 4) * direction;
+    return shiftFrame(frame, offsetX, offsetY);
+  });
+
+  // Apply random rotation
   processedFrames = processedFrames.map((frame, index) => {
     const angle = (Math.random() - 0.5) * 15; // ±7.5 degrees
     return rotateFrame(frame, angle);
@@ -159,6 +170,64 @@ function rotateFrame(frame: GifFrame, angleDegrees: number): GifFrame {
   return {
     ...frame,
     imageData: rotatedImageData,
+    canvas,
+  };
+}
+
+/**
+ * Adds padding around a frame to prevent clipping during transformations
+ * Padding is at least 4 pixels or 1% of dimension, whichever is smaller
+ */
+function addPadding(frame: GifFrame): GifFrame {
+  const { width, height } = frame.imageData;
+
+  // Calculate padding: minimum of 4 pixels or 1% of dimension
+  const paddingX = Math.min(4, Math.ceil(width * 0.01));
+  const paddingY = Math.min(4, Math.ceil(height * 0.01));
+
+  return addCustomPadding(frame, paddingX, paddingX, paddingY, paddingY);
+}
+
+/**
+ * Adds custom padding to specific borders of a frame
+ * @param frame - The frame to add padding to
+ * @param left - Pixels to add to left border
+ * @param right - Pixels to add to right border
+ * @param top - Pixels to add to top border
+ * @param bottom - Pixels to add to bottom border
+ */
+export function addCustomPadding(
+  frame: GifFrame,
+  left: number,
+  right: number,
+  top: number,
+  bottom: number
+): GifFrame {
+  const { width, height } = frame.imageData;
+
+  // Create new canvas with padding
+  const newWidth = width + left + right;
+  const newHeight = height + top + bottom;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = newWidth;
+  canvas.height = newHeight;
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) return frame;
+
+  // Clear canvas to transparent
+  ctx.clearRect(0, 0, newWidth, newHeight);
+
+  // Draw original image with appropriate offset
+  ctx.putImageData(frame.imageData, left, top);
+
+  // Get the padded image data
+  const paddedImageData = ctx.getImageData(0, 0, newWidth, newHeight);
+
+  return {
+    ...frame,
+    imageData: paddedImageData,
     canvas,
   };
 }

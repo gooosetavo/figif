@@ -16,7 +16,7 @@ import { useWorkspaceManager } from './hooks/useWorkspaceManager';
 import { deserializeFrames } from './utils/serialization';
 import { isGifFile, convertImageToGif } from './utils/imageToGif';
 import { resizeFrames, cropFrames } from './utils/imageTransform';
-import { applyIntensifiesEffect, applyPartyEffect, applyOnDrugsEffect } from './utils/gifEffects';
+import { applyIntensifiesEffect, applyPartyEffect, applyOnDrugsEffect, addCustomPadding } from './utils/gifEffects';
 import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
@@ -33,6 +33,14 @@ function App() {
   const [isResizing, setIsResizing] = useState(false);
   const [isCropping, setIsCropping] = useState(false);
   const [isHistoryPanelCollapsed, setIsHistoryPanelCollapsed] = useState(false);
+
+  // Padding state
+  const [showPadding, setShowPadding] = useState(false);
+  const [paddingAmount, setPaddingAmount] = useState(10);
+  const [paddingTop, setPaddingTop] = useState(true);
+  const [paddingRight, setPaddingRight] = useState(true);
+  const [paddingBottom, setPaddingBottom] = useState(true);
+  const [paddingLeft, setPaddingLeft] = useState(true);
 
   // Preview state
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -377,7 +385,7 @@ function App() {
       newFrames[currentFrameIndex] = processedFrame;
       setFrames(newFrames);
       handleClearSelections();
-      setIsManualSelectionMode(false);
+      // Keep manual mode active so user can continue selecting
 
       // Auto-save
       if (workspaceManager.activeWorkspace) {
@@ -429,7 +437,7 @@ function App() {
 
       setFrames(processedFrames);
       handleClearSelections();
-      setIsManualSelectionMode(false);
+      // Keep manual mode active so user can continue selecting
 
       // Auto-save
       if (workspaceManager.activeWorkspace) {
@@ -568,6 +576,49 @@ function App() {
         );
       }
     }, 100);
+  };
+
+  const handleApplyPadding = async (scope: 'current' | 'all') => {
+    if (frames.length === 0) return;
+
+    try {
+      const left = paddingLeft ? paddingAmount : 0;
+      const right = paddingRight ? paddingAmount : 0;
+      const top = paddingTop ? paddingAmount : 0;
+      const bottom = paddingBottom ? paddingAmount : 0;
+
+      if (scope === 'current') {
+        const paddedFrame = addCustomPadding(frames[currentFrameIndex], left, right, top, bottom);
+        const newFrames = [...frames];
+        newFrames[currentFrameIndex] = paddedFrame;
+        setFrames(newFrames);
+
+        // Auto-save
+        if (workspaceManager.activeWorkspace) {
+          await workspaceManager.saveSnapshot(
+            newFrames,
+            currentFrameIndex,
+            `Applied padding to current frame (L:${left} R:${right} T:${top} B:${bottom})`,
+            true
+          );
+        }
+      } else {
+        const paddedFrames = frames.map(frame => addCustomPadding(frame, left, right, top, bottom));
+        setFrames(paddedFrames);
+
+        // Auto-save
+        if (workspaceManager.activeWorkspace) {
+          await workspaceManager.saveSnapshot(
+            paddedFrames,
+            currentFrameIndex,
+            `Applied padding to all frames (L:${left} R:${right} T:${top} B:${bottom})`,
+            true
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Failed to apply padding:', err);
+    }
   };
 
   // Manual save handler
@@ -772,6 +823,94 @@ function App() {
             </div>
 
             <div className="control-section">
+              <h3>Add Padding</h3>
+              <div className="control-group">
+                <button
+                  onClick={() => setShowPadding(!showPadding)}
+                  className={showPadding ? 'active-toggle' : ''}
+                >
+                  {showPadding ? 'Hide' : 'Show'} Padding
+                </button>
+              </div>
+              {showPadding && (
+                <div style={{ marginTop: '12px' }}>
+                  <div className="control-item">
+                    <label>
+                      Padding Amount: {paddingAmount}px
+                      <input
+                        type="range"
+                        min="1"
+                        max="100"
+                        value={paddingAmount}
+                        onChange={(e) => setPaddingAmount(Number(e.target.value))}
+                        className="slider"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="control-item" style={{ marginTop: '12px' }}>
+                    <label style={{ fontSize: '14px', marginBottom: '8px', display: 'block' }}>Apply to borders:</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={paddingTop}
+                          onChange={(e) => setPaddingTop(e.target.checked)}
+                        />
+                        Top
+                      </label>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={paddingBottom}
+                          onChange={(e) => setPaddingBottom(e.target.checked)}
+                        />
+                        Bottom
+                      </label>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={paddingLeft}
+                          onChange={(e) => setPaddingLeft(e.target.checked)}
+                        />
+                        Left
+                      </label>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={paddingRight}
+                          onChange={(e) => setPaddingRight(e.target.checked)}
+                        />
+                        Right
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="button-group-vertical" style={{ marginTop: '12px' }}>
+                    <button
+                      onClick={() => handleApplyPadding('current')}
+                      disabled={frames.length === 0 || (!paddingTop && !paddingBottom && !paddingLeft && !paddingRight)}
+                      className="action-button"
+                    >
+                      Apply to Current Frame
+                    </button>
+                    <button
+                      onClick={() => handleApplyPadding('all')}
+                      disabled={frames.length === 0 || (!paddingTop && !paddingBottom && !paddingLeft && !paddingRight)}
+                      className="action-button warning"
+                    >
+                      Apply to All Frames
+                    </button>
+                  </div>
+
+                  <p style={{ fontSize: '12px', color: '#718096', marginTop: '8px', lineHeight: '1.4' }}>
+                    ℹ️ Adds transparent padding to selected borders. Useful before applying shake or rotation effects.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="control-section">
               <h3>Resize</h3>
               <div className="control-group">
                 <button
@@ -823,13 +962,13 @@ function App() {
             </div>
 
             <div className="control-section">
-              <h3>Background Removal</h3>
+              <h3>Background Selection</h3>
               <div className="control-group">
                 <button
                   onClick={() => setShowBackgroundRemoval(!showBackgroundRemoval)}
                   className={showBackgroundRemoval ? 'active-toggle' : ''}
                 >
-                  {showBackgroundRemoval ? 'Hide' : 'Enable'} Background Removal
+                  {showBackgroundRemoval ? 'Hide' : 'Enable'} Background Selection
                 </button>
               </div>
               {showBackgroundRemoval && (
