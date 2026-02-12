@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { CanvasEditor } from './components/CanvasEditor';
 import { Timeline } from './components/Timeline';
@@ -8,11 +8,18 @@ import { ResizePanel } from './components/Panels/ResizePanel';
 import { CropPanel, type CropSelection } from './components/Panels/CropPanel';
 import { PreviewModal } from './components/PreviewModal';
 import { WorkspaceTabs } from './components/WorkspaceTabs/WorkspaceTabs';
+import { useEditorState } from './hooks/useEditorState';
+import { ViewControls } from './components/Sidebar/ViewControls';
+import { SpeedControls } from './components/Sidebar/SpeedControls';
+import { FrameControls } from './components/Sidebar/FrameControls';
+import { PaddingControls } from './components/Sidebar/PaddingControls';
+import { TransformControls } from './components/Sidebar/TransformControls';
 import { useGifDecoder } from './hooks/useGifDecoder';
 import { useGifEncoder } from './hooks/useGifEncoder';
 import { useFrameManager } from './hooks/useFrameManager';
 import { useBackgroundRemoval, type RemovalMode } from './hooks/useBackgroundRemoval';
 import { useWorkspaceManager } from './hooks/useWorkspaceManager';
+import { useTheme } from './contexts/ThemeContext';
 import { deserializeFrames } from './utils/serialization';
 import { isGifFile, convertImageToGif } from './utils/imageToGif';
 import { resizeFrames, cropFrames } from './utils/imageTransform';
@@ -21,33 +28,41 @@ import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
 function App() {
-  const [zoom, setZoom] = useState(1);
-  const [isManualSelectionMode, setIsManualSelectionMode] = useState(false);
-  const [selectionMask, setSelectionMask] = useState<Uint8ClampedArray | null>(null);
-  const [selectionPoints, setSelectionPoints] = useState<Array<{ x: number; y: number; tolerance: number }>>([]);
-  const [manualTolerance, setManualTolerance] = useState(50);
-  const [showBackgroundRemoval, setShowBackgroundRemoval] = useState(false);
-  const [showResize, setShowResize] = useState(false);
-  const [showCrop, setShowCrop] = useState(false);
-  const [cropSelection, setCropSelection] = useState<CropSelection | null>(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isCropping, setIsCropping] = useState(false);
-  const [isHistoryPanelCollapsed, setIsHistoryPanelCollapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
-  // Padding state
-  const [showPadding, setShowPadding] = useState(false);
-  const [paddingAmount, setPaddingAmount] = useState(10);
-  const [paddingTop, setPaddingTop] = useState(true);
-  const [paddingRight, setPaddingRight] = useState(true);
-  const [paddingBottom, setPaddingBottom] = useState(true);
-  const [paddingLeft, setPaddingLeft] = useState(true);
-
-  // Frame selection state
-  const [selectedFrames, setSelectedFrames] = useState<Set<number>>(new Set());
-  const [showTransform, setShowTransform] = useState(false);
-
-  // Preview state
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  // Use the editor state hook
+  const {
+    zoom,
+    handleZoomIn,
+    handleZoomOut,
+    handleZoomReset,
+    isManualSelectionMode,
+    setIsManualSelectionMode,
+    selectionMask,
+    setSelectionMask,
+    selectionPoints,
+    setSelectionPoints,
+    manualTolerance,
+    setManualTolerance,
+    showBackgroundRemoval,
+    setShowBackgroundRemoval,
+    showResize,
+    setShowResize,
+    showCrop,
+    setShowCrop,
+    cropSelection,
+    setCropSelection,
+    isResizing,
+    setIsResizing,
+    isCropping,
+    setIsCropping,
+    isHistoryPanelCollapsed,
+    setIsHistoryPanelCollapsed,
+    selectedFrames,
+    setSelectedFrames,
+    showPreviewModal,
+    setShowPreviewModal,
+  } = useEditorState();
 
   const { decodeGif, isDecoding, error: decodeError } = useGifDecoder();
   const { downloadGif, isEncoding, progress } = useGifEncoder();
@@ -191,10 +206,6 @@ function App() {
       console.error('Failed to export GIF:', err);
     }
   };
-
-  const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3));
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.25));
-  const handleZoomReset = () => setZoom(1);
 
   const handleSpeedChange = (multiplier: number) => {
     if (frames.length === 0) return;
@@ -644,15 +655,10 @@ function App() {
     }, 100);
   };
 
-  const handleApplyPadding = async (scope: 'current' | 'all') => {
+  const handleApplyPadding = async (scope: 'current' | 'all', left: number, right: number, top: number, bottom: number) => {
     if (frames.length === 0) return;
 
     try {
-      const left = paddingLeft ? paddingAmount : 0;
-      const right = paddingRight ? paddingAmount : 0;
-      const top = paddingTop ? paddingAmount : 0;
-      const bottom = paddingBottom ? paddingAmount : 0;
-
       if (scope === 'current') {
         const paddedFrame = addCustomPadding(frames[currentFrameIndex], left, right, top, bottom);
         const newFrames = [...frames];
@@ -950,6 +956,13 @@ function App() {
             <button onClick={() => window.location.reload()} className="toolbar-button">
               📂 Load New Image
             </button>
+            <button
+              onClick={toggleTheme}
+              className="toolbar-button"
+              title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+            >
+              {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+            </button>
           </div>
         </div>
       )}
@@ -969,313 +982,37 @@ function App() {
       ) : (
         <div className="editor-container">
           <aside className="sidebar">
-            <div className="control-section">
-              <h3>View</h3>
-              <div className="control-group">
-                <label>Zoom: {Math.round(zoom * 100)}%</label>
-                <div className="button-group">
-                  <button onClick={handleZoomOut}>-</button>
-                  <button onClick={handleZoomReset}>Reset</button>
-                  <button onClick={handleZoomIn}>+</button>
-                </div>
-              </div>
-            </div>
+            <ViewControls
+              zoom={zoom}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onZoomReset={handleZoomReset}
+            />
 
-            <div className="control-section">
-              <h3>Speed</h3>
-              <div className="button-group">
-                <button onClick={() => handleSpeedChange(0.5)} title="Slower (2x)">− Slower</button>
-                <button onClick={() => handleSpeedChange(2)} title="Faster (2x)">+ Faster</button>
-              </div>
-            </div>
+            <SpeedControls onSpeedChange={handleSpeedChange} />
 
-            <div className="control-section">
-              <h3>Frames</h3>
-              <div className="control-group">
-                <button onClick={() => handleDuplicateFrame('current')}>Duplicate Current</button>
-                {selectedFrames.size > 0 && (
-                  <button onClick={() => handleDuplicateFrame('selected')} style={{ background: '#48bb78' }}>
-                    Duplicate Selected ({selectedFrames.size})
-                  </button>
-                )}
-                <button onClick={() => handleDeleteFrame('current')} disabled={frames.length <= 1}>
-                  Delete Current
-                </button>
-                {selectedFrames.size > 0 && (
-                  <button
-                    onClick={() => handleDeleteFrame('selected')}
-                    disabled={frames.length <= selectedFrames.size}
-                    style={{ background: '#e53e3e' }}
-                  >
-                    Delete Selected ({selectedFrames.size})
-                  </button>
-                )}
-                <button onClick={handleReverseFrames}>Reverse All</button>
-              </div>
-              <div className="control-group" style={{ marginTop: '8px' }}>
-                <button onClick={handleRemoveEveryOtherFrame} disabled={frames.length <= 1}>
-                  Remove Every Other
-                </button>
-                <button onClick={handleDuplicateAllFrames} disabled={frames.length === 0}>
-                  Duplicate All
-                </button>
-              </div>
-              <div className="control-group" style={{ marginTop: '8px', gap: '4px' }}>
-                <button
-                  onClick={() => handleKeepEveryNthFrame(3)}
-                  disabled={frames.length <= 2}
-                  title="Keep every 3rd frame"
-                  style={{ fontSize: '13px' }}
-                >
-                  Keep 1/3
-                </button>
-                <button
-                  onClick={() => handleKeepEveryNthFrame(4)}
-                  disabled={frames.length <= 3}
-                  title="Keep every 4th frame"
-                  style={{ fontSize: '13px' }}
-                >
-                  Keep 1/4
-                </button>
-                <button
-                  onClick={() => handleKeepEveryNthFrame(5)}
-                  disabled={frames.length <= 4}
-                  title="Keep every 5th frame"
-                  style={{ fontSize: '13px' }}
-                >
-                  Keep 1/5
-                </button>
-              </div>
-            </div>
+            <FrameControls
+              framesCount={frames.length}
+              selectedFramesCount={selectedFrames.size}
+              onDuplicateFrame={handleDuplicateFrame}
+              onDeleteFrame={handleDeleteFrame}
+              onReverseFrames={handleReverseFrames}
+              onRemoveEveryOtherFrame={handleRemoveEveryOtherFrame}
+              onDuplicateAllFrames={handleDuplicateAllFrames}
+              onKeepEveryNthFrame={handleKeepEveryNthFrame}
+            />
 
-            <div className="control-section">
-              <h3>Add Padding</h3>
-              <div className="control-group">
-                <button
-                  onClick={() => setShowPadding(!showPadding)}
-                  className={showPadding ? 'active-toggle' : ''}
-                >
-                  {showPadding ? 'Hide' : 'Show'} Padding
-                </button>
-              </div>
-              {showPadding && (
-                <div style={{ marginTop: '12px' }}>
-                  <div className="control-item">
-                    <label>
-                      Padding Amount: {paddingAmount}px
-                      <input
-                        type="range"
-                        min="1"
-                        max="100"
-                        value={paddingAmount}
-                        onChange={(e) => setPaddingAmount(Number(e.target.value))}
-                        className="slider"
-                      />
-                    </label>
-                  </div>
+            <PaddingControls
+              framesCount={frames.length}
+              onApplyPadding={handleApplyPadding}
+            />
 
-                  <div className="control-item" style={{ marginTop: '12px' }}>
-                    <label style={{ fontSize: '14px', marginBottom: '8px', display: 'block' }}>Apply to borders:</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={paddingTop}
-                          onChange={(e) => setPaddingTop(e.target.checked)}
-                        />
-                        Top
-                      </label>
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={paddingBottom}
-                          onChange={(e) => setPaddingBottom(e.target.checked)}
-                        />
-                        Bottom
-                      </label>
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={paddingLeft}
-                          onChange={(e) => setPaddingLeft(e.target.checked)}
-                        />
-                        Left
-                      </label>
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={paddingRight}
-                          onChange={(e) => setPaddingRight(e.target.checked)}
-                        />
-                        Right
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="button-group-vertical" style={{ marginTop: '12px' }}>
-                    <button
-                      onClick={() => handleApplyPadding('current')}
-                      disabled={frames.length === 0 || (!paddingTop && !paddingBottom && !paddingLeft && !paddingRight)}
-                      className="action-button"
-                    >
-                      Apply to Current Frame
-                    </button>
-                    <button
-                      onClick={() => handleApplyPadding('all')}
-                      disabled={frames.length === 0 || (!paddingTop && !paddingBottom && !paddingLeft && !paddingRight)}
-                      className="action-button warning"
-                    >
-                      Apply to All Frames
-                    </button>
-                  </div>
-
-                  <p style={{ fontSize: '12px', color: '#718096', marginTop: '8px', lineHeight: '1.4' }}>
-                    ℹ️ Adds transparent padding to selected borders. Useful before applying shake or rotation effects.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="control-section">
-              <h3>Rotate & Flip</h3>
-              <div className="control-group">
-                <button
-                  onClick={() => setShowTransform(!showTransform)}
-                  className={showTransform ? 'active-toggle' : ''}
-                >
-                  {showTransform ? 'Hide' : 'Show'} Transform
-                </button>
-              </div>
-              {showTransform && (
-                <div style={{ marginTop: '12px' }}>
-                  {selectedFrames.size > 0 && (
-                    <div style={{ marginBottom: '12px', padding: '8px', background: '#edf2f7', borderRadius: '6px', fontSize: '13px', color: '#4a5568' }}>
-                      ✓ {selectedFrames.size} frame{selectedFrames.size !== 1 ? 's' : ''} selected
-                    </div>
-                  )}
-
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Rotate 90°</label>
-                    <div className="button-group-vertical" style={{ gap: '4px' }}>
-                      <button
-                        onClick={() => handleRotate(false, 'current')}
-                        disabled={frames.length === 0}
-                        className="action-button"
-                        style={{ fontSize: '13px', padding: '8px' }}
-                      >
-                        ↺ Rotate Left (Current)
-                      </button>
-                      <button
-                        onClick={() => handleRotate(true, 'current')}
-                        disabled={frames.length === 0}
-                        className="action-button"
-                        style={{ fontSize: '13px', padding: '8px' }}
-                      >
-                        ↻ Rotate Right (Current)
-                      </button>
-                      {selectedFrames.size > 0 && (
-                        <>
-                          <button
-                            onClick={() => handleRotate(false, 'selected')}
-                            disabled={frames.length === 0}
-                            className="action-button"
-                            style={{ fontSize: '13px', padding: '8px', background: '#48bb78' }}
-                          >
-                            ↺ Rotate Left (Selected {selectedFrames.size})
-                          </button>
-                          <button
-                            onClick={() => handleRotate(true, 'selected')}
-                            disabled={frames.length === 0}
-                            className="action-button"
-                            style={{ fontSize: '13px', padding: '8px', background: '#48bb78' }}
-                          >
-                            ↻ Rotate Right (Selected {selectedFrames.size})
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleRotate(false, 'all')}
-                        disabled={frames.length === 0}
-                        className="action-button warning"
-                        style={{ fontSize: '13px', padding: '8px' }}
-                      >
-                        ↺ Rotate Left (All)
-                      </button>
-                      <button
-                        onClick={() => handleRotate(true, 'all')}
-                        disabled={frames.length === 0}
-                        className="action-button warning"
-                        style={{ fontSize: '13px', padding: '8px' }}
-                      >
-                        ↻ Rotate Right (All)
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Flip</label>
-                    <div className="button-group-vertical" style={{ gap: '4px' }}>
-                      <button
-                        onClick={() => handleFlip(true, 'current')}
-                        disabled={frames.length === 0}
-                        className="action-button"
-                        style={{ fontSize: '13px', padding: '8px' }}
-                      >
-                        ↔ Flip Horizontal (Current)
-                      </button>
-                      <button
-                        onClick={() => handleFlip(false, 'current')}
-                        disabled={frames.length === 0}
-                        className="action-button"
-                        style={{ fontSize: '13px', padding: '8px' }}
-                      >
-                        ↕ Flip Vertical (Current)
-                      </button>
-                      {selectedFrames.size > 0 && (
-                        <>
-                          <button
-                            onClick={() => handleFlip(true, 'selected')}
-                            disabled={frames.length === 0}
-                            className="action-button"
-                            style={{ fontSize: '13px', padding: '8px', background: '#48bb78' }}
-                          >
-                            ↔ Flip Horizontal (Selected {selectedFrames.size})
-                          </button>
-                          <button
-                            onClick={() => handleFlip(false, 'selected')}
-                            disabled={frames.length === 0}
-                            className="action-button"
-                            style={{ fontSize: '13px', padding: '8px', background: '#48bb78' }}
-                          >
-                            ↕ Flip Vertical (Selected {selectedFrames.size})
-                          </button>
-                        </>
-                      )}
-                      <button
-                        onClick={() => handleFlip(true, 'all')}
-                        disabled={frames.length === 0}
-                        className="action-button warning"
-                        style={{ fontSize: '13px', padding: '8px' }}
-                      >
-                        ↔ Flip Horizontal (All)
-                      </button>
-                      <button
-                        onClick={() => handleFlip(false, 'all')}
-                        disabled={frames.length === 0}
-                        className="action-button warning"
-                        style={{ fontSize: '13px', padding: '8px' }}
-                      >
-                        ↕ Flip Vertical (All)
-                      </button>
-                    </div>
-                  </div>
-
-                  <p style={{ fontSize: '12px', color: '#718096', marginTop: '12px', lineHeight: '1.4' }}>
-                    💡 Ctrl/Cmd+Click frames in timeline to select multiple. Shift+Click to select range.
-                  </p>
-                </div>
-              )}
-            </div>
+            <TransformControls
+              framesCount={frames.length}
+              selectedFramesCount={selectedFrames.size}
+              onRotate={handleRotate}
+              onFlip={handleFlip}
+            />
 
             <div className="control-section">
               <h3>Resize</h3>
@@ -1397,7 +1134,7 @@ function App() {
                 onClick={() => setIsHistoryPanelCollapsed(!isHistoryPanelCollapsed)}
                 aria-label={isHistoryPanelCollapsed ? 'Show history' : 'Hide history'}
               >
-                {isHistoryPanelCollapsed ? '◀' : '▶'}
+                {isHistoryPanelCollapsed ? '▶' : '◀'}
               </button>
               <div className="right-panel-header">
                 <h3>History & Version Control</h3>
