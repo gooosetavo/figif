@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './ExportModal.css';
 
-export type ExportFormat = 'gif' | 'png' | 'apng' | 'webp' | 'mp4';
+export type ExportFormat = 'gif' | 'png' | 'apng' | 'webp' | 'webm';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -36,20 +36,6 @@ const FORMATS: Array<{
     supportsQuality: true,
   },
   {
-    value: 'apng',
-    label: 'APNG',
-    description: 'Animated PNG - Better quality, smaller file size',
-    supportsFrames: true,
-    supportsQuality: true,
-  },
-  {
-    value: 'webp',
-    label: 'WebP',
-    description: 'Animated WebP - Best compression, modern browsers',
-    supportsFrames: true,
-    supportsQuality: true,
-  },
-  {
     value: 'png',
     label: 'PNG',
     description: 'Static PNG - Single frame, lossless',
@@ -57,9 +43,23 @@ const FORMATS: Array<{
     supportsQuality: false,
   },
   {
-    value: 'mp4',
-    label: 'MP4 Video',
-    description: 'H.264 video - Smooth playback, wide support',
+    value: 'apng',
+    label: 'APNG',
+    description: 'Animated PNG - Better quality than GIF, good compression',
+    supportsFrames: true,
+    supportsQuality: false,
+  },
+  {
+    value: 'webp',
+    label: 'WebP',
+    description: 'Static WebP - Single frame, excellent compression',
+    supportsFrames: false,
+    supportsQuality: true,
+  },
+  {
+    value: 'webm',
+    label: 'WebM Video',
+    description: 'WebM video - Modern browsers, efficient compression',
     supportsFrames: true,
     supportsQuality: true,
   },
@@ -174,7 +174,7 @@ export const ExportModal = ({
           )}
 
           {/* FPS Settings (for video) */}
-          {format === 'mp4' && (
+          {format === 'webm' && (
             <div className="export-section">
               <h3>Frame Rate</h3>
               <div className="export-slider-container">
@@ -195,7 +195,7 @@ export const ExportModal = ({
           )}
 
           {/* Loop Settings */}
-          {selectedFormat.supportsFrames && format !== 'mp4' && (
+          {selectedFormat.supportsFrames && format !== 'webm' && (
             <div className="export-section">
               <h3>Loop</h3>
               <div className="export-options">

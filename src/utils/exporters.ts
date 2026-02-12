@@ -1,3 +1,4 @@
+import UPNG from 'upng-js';
 import type { GifFrame } from '../types/gif.types';
 import type { ExportOptions } from '../components/ExportModal';
 
@@ -33,72 +34,132 @@ export const exportAsPNG = async (frame: GifFrame, filename: string): Promise<vo
 };
 
 /**
- * Export frames as APNG (animated PNG)
- * Note: This is a placeholder. Full APNG encoding requires a library like upng-js
+ * Export frames as APNG (animated PNG) using upng-js
  */
 export const exportAsAPNG = async (
-  frames: GifFrame[],
-  filename: string,
-  _options: ExportOptions,
-  onProgress?: (progress: number) => void
-): Promise<void> => {
-  // For now, we'll fall back to exporting as a zip of PNGs
-  // A full implementation would use a library like upng-js
-  const message = `APNG export not yet fully implemented. Exporting ${frames.length} individual PNG files instead.`;
-  console.warn(message);
-  alert(message);
-
-  for (let i = 0; i < frames.length; i++) {
-    const frame = frames[i];
-    const frameName = filename.replace(/\.(png|apng)$/i, `_frame_${i + 1}.png`);
-    await exportAsPNG(frame, frameName);
-
-    if (onProgress) {
-      onProgress(Math.round(((i + 1) / frames.length) * 100));
-    }
-  }
-};
-
-/**
- * Export frames as WebP (animated or static)
- * Note: This is a placeholder. Full WebP encoding requires a library
- */
-export const exportAsWebP = async (
-  frames: GifFrame[],
-  filename: string,
-  _options: ExportOptions,
-  onProgress?: (progress: number) => void
-): Promise<void> => {
-  // WebP encoding is not natively supported in canvas
-  // A full implementation would use a library like libwebp.js or wasm
-  const message = 'WebP export not yet fully implemented. Exporting first frame as PNG instead.';
-  console.warn(message);
-  alert(message);
-
-  if (frames.length > 0) {
-    await exportAsPNG(frames[0], filename.replace(/\.webp$/i, '.png'));
-  }
-
-  if (onProgress) {
-    onProgress(100);
-  }
-};
-
-/**
- * Export frames as MP4 video
- * Note: This requires MediaRecorder API or a video encoding library
- */
-export const exportAsMP4 = async (
   frames: GifFrame[],
   filename: string,
   options: ExportOptions,
   onProgress?: (progress: number) => void
 ): Promise<void> => {
   try {
-    const message = 'MP4 encoding not supported in browsers. Exporting as WebM video instead.';
-    console.warn(message);
-    alert(message);
+    if (frames.length === 0) {
+      throw new Error('No frames to export');
+    }
 
+    // Collect frame data as RGBA buffers
+    const width = frames[0].imageData.width;
+    const height = frames[0].imageData.height;
+    const frameBuffers: ArrayBuffer[] = [];
+    const delays: number[] = [];
+
+    for (let i = 0; i < frames.length; i++) {
+      const frame = frames[i];
+      // Get RGBA data from ImageData
+      frameBuffers.push(frame.imageData.data.buffer);
+      // Use frame delay, default to 100ms if not available
+      delays.push(frame.delay || 100);
+
+      if (onProgress) {
+        onProgress(Math.round(((i + 1) / frames.length) * 50)); // First 50%
+      }
+    }
+
+    // Encode as APNG
+    // cnum = 0 for RGBA (no color compression)
+    // Note: UPNG doesn't directly support loop count in encode, APNG loops infinitely by default
+    void options; // Loop count not used in UPNG.encode
+    const apngBuffer = UPNG.encode(frameBuffers, width, height, 0, delays);
+
+    if (onProgress) {
+      onProgress(75); // Encoding done
+    }
+
+    // Create blob and download
+    const blob = new Blob([apngBuffer], { type: 'image/apng' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    if (onProgress) {
+      onProgress(100);
+    }
+  } catch (error) {
+    console.error('APNG export failed:', error);
+    throw new Error('APNG export failed. Try exporting as GIF instead.');
+  }
+};
+
+/**
+ * Export frames as WebP (static image)
+ * Note: Animated WebP encoding is not natively supported in browsers
+ * This exports the first frame as a static WebP image
+ */
+export const exportAsWebP = async (
+  frames: GifFrame[],
+  filename: string,
+  options: ExportOptions,
+  onProgress?: (progress: number) => void
+): Promise<void> => {
+  try {
+    if (frames.length === 0) {
+      throw new Error('No frames to export');
+    }
+
+    // Export first frame (or current selected frame) as static WebP
+    const frame = frames[0];
+
+    if (!frame.canvas) {
+      throw new Error('Frame canvas is not available');
+    }
+
+    // Use quality option (1-20 scale to 0-1 scale for WebP)
+    const quality = options.quality / 20;
+
+    return new Promise((resolve, reject) => {
+      frame.canvas!.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Failed to create WebP blob'));
+            return;
+          }
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          link.click();
+          URL.revokeObjectURL(url);
+
+          if (onProgress) {
+            onProgress(100);
+          }
+
+          resolve();
+        },
+        'image/webp',
+        quality
+      );
+    });
+  } catch (error) {
+    console.error('WebP export failed:', error);
+    throw new Error('WebP export is not supported in this browser. Try exporting as PNG or GIF instead.');
+  }
+};
+
+/**
+ * Export frames as WebM video using MediaRecorder API
+ */
+export const exportAsWebM = async (
+  frames: GifFrame[],
+  filename: string,
+  options: ExportOptions,
+  onProgress?: (progress: number) => void
+): Promise<void> => {
+  try {
     // Create a canvas to render frames
     const canvas = document.createElement('canvas');
     canvas.width = frames[0].imageData.width;
@@ -112,7 +173,7 @@ export const exportAsMP4 = async (
     // Check if MediaRecorder is supported
     const stream = canvas.captureStream(options.fps || 30);
     const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm', // Most browsers support webm, not mp4 directly
+      mimeType: 'video/webm',
       videoBitsPerSecond: 2500000
     });
 
@@ -129,7 +190,7 @@ export const exportAsMP4 = async (
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = filename.replace(/\.mp4$/i, '.webm'); // Save as webm
+      link.download = filename;
       link.click();
       URL.revokeObjectURL(url);
     };
@@ -149,9 +210,27 @@ export const exportAsMP4 = async (
 
     mediaRecorder.stop();
   } catch (error) {
-    console.error('MP4 export failed:', error);
+    console.error('WebM export failed:', error);
     throw new Error('Video export is not supported in this browser. Try exporting as GIF instead.');
   }
+};
+
+/**
+ * Export frames as MP4 video
+ * Note: MP4 encoding is not supported in browsers - use WebM instead
+ */
+export const exportAsMP4 = async (
+  frames: GifFrame[],
+  filename: string,
+  options: ExportOptions,
+  onProgress?: (progress: number) => void
+): Promise<void> => {
+  // Reference parameters to avoid unused warnings
+  void frames;
+  void filename;
+  void options;
+  void onProgress;
+  throw new Error('MP4 export is not supported. Please use WebM format instead.');
 };
 
 /**

@@ -23,7 +23,7 @@ import { deserializeFrames } from './utils/serialization';
 import { isGifFile, convertImageToGif } from './utils/imageToGif';
 import { resizeFrames, cropFrames } from './utils/imageTransform';
 import { applyIntensifiesEffect, applyPartyEffect, applyOnDrugsEffect, addCustomPadding, rotate90, flipFrame } from './utils/gifEffects';
-import { exportAsPNG, exportAsAPNG, exportAsWebP, exportAsMP4, getExportFilename } from './utils/exporters';
+import { exportAsPNG, exportAsAPNG, exportAsWebP, exportAsWebM, getExportFilename } from './utils/exporters';
 import type { AIBackgroundRemovalConfig } from './types/gif.types';
 import './App.css';
 
@@ -252,8 +252,8 @@ function App() {
           await exportAsWebP(framesToExport, filename, options, setExportProgress);
           break;
 
-        case 'mp4':
-          await exportAsMP4(framesToExport, filename, options, setExportProgress);
+        case 'webm':
+          await exportAsWebM(framesToExport, filename, options, setExportProgress);
           break;
 
         default:
