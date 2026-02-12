@@ -1,6 +1,6 @@
 .workspace-tabs {
-  background: #f7fafc;
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--bg-primary);
+  border-bottom: 2px solid var(--border-color);
   padding: 8px 16px 0;
 }
 
@@ -10,7 +10,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e0 #f7fafc;
+  scrollbar-color: var(--text-tertiary) var(--bg-primary);
 }
 
 .workspace-tabs-container::-webkit-scrollbar {
@@ -18,11 +18,11 @@
 }
 
 .workspace-tabs-container::-webkit-scrollbar-track {
-  background: #f7fafc;
+  background: var(--bg-primary);
 }
 
 .workspace-tabs-container::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
+  background: var(--text-tertiary);
   border-radius: 3px;
 }
 
@@ -31,8 +31,8 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #e2e8f0;
-  border: 1px solid #cbd5e0;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
   border-bottom: none;
   border-radius: 6px 6px 0 0;
   cursor: pointer;
@@ -43,7 +43,7 @@
 }
 
 .workspace-tab:hover:not(.loading) {
-  background: #edf2f7;
+  background: var(--bg-secondary);
 }
 
 .workspace-tab.loading {
@@ -52,9 +52,9 @@
 }
 
 .workspace-tab.active {
-  background: white;
-  border-color: #667eea;
-  border-bottom: 2px solid white;
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  border-bottom: 2px solid var(--bg-secondary);
   margin-bottom: -2px;
   box-shadow: 0 -2px 4px rgba(102, 126, 234, 0.1);
 }
@@ -66,7 +66,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: #667eea;
+  background: var(--accent-primary);
   border-radius: 3px 3px 0 0;
 }
 
@@ -76,8 +76,8 @@
   object-fit: cover;
   border-radius: 4px;
   flex-shrink: 0;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--bg-secondary);
+  box-shadow: 0 1px 3px var(--shadow-sm);
 }
 
 .workspace-tab-name {
@@ -87,16 +87,16 @@
   text-overflow: ellipsis;
   font-weight: 500;
   font-size: 14px;
-  color: #2d3748;
+  color: var(--text-primary);
 }
 
 .workspace-tab.active .workspace-tab-name {
-  color: #667eea;
+  color: var(--accent-primary);
 }
 
 .workspace-tab-info {
   font-size: 11px;
-  color: #718096;
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
@@ -105,7 +105,7 @@
   height: 20px;
   border: none;
   background: transparent;
-  color: #718096;
+  color: var(--text-tertiary);
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -118,7 +118,7 @@
 }
 
 .workspace-tab-close:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--bg-tertiary);
   color: #e53e3e;
 }
 
@@ -130,10 +130,10 @@
 .workspace-tab-new {
   padding: 8px 16px;
   background: transparent;
-  border: 1px dashed #cbd5e0;
+  border: 1px dashed var(--border-color);
   border-bottom: none;
   border-radius: 6px 6px 0 0;
-  color: #667eea;
+  color: var(--accent-primary);
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
@@ -142,8 +142,8 @@
 }
 
 .workspace-tab-new:hover:not(:disabled) {
-  background: #edf2f7;
-  border-color: #667eea;
+  background: var(--bg-tertiary);
+  border-color: var(--accent-primary);
 }
 
 .workspace-tab-new:disabled {

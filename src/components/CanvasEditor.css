@@ -1,10 +1,10 @@
 .canvas-editor {
   flex: 1;
-  background: linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%),
-    linear-gradient(45deg, #e2e8f0 25%, transparent 25%, transparent 75%, #e2e8f0 75%);
+  background: linear-gradient(45deg, var(--transparency-light) 25%, transparent 25%, transparent 75%, var(--transparency-light) 75%),
+    linear-gradient(45deg, var(--transparency-light) 25%, transparent 25%, transparent 75%, var(--transparency-light) 75%);
   background-size: 20px 20px;
   background-position: 0 0, 10px 10px;
-  background-color: #f7fafc;
+  background-color: var(--transparency-dark);
   overflow: auto;
   position: relative;
   display: flex;
@@ -26,12 +26,12 @@
 }
 
 .canvas-editor.empty {
-  background: #f7fafc;
+  background: var(--bg-primary);
   cursor: default;
 }
 
 .canvas-editor.empty p {
-  color: #a0aec0;
+  color: var(--text-tertiary);
   font-size: 18px;
 }
 
@@ -43,9 +43,9 @@
 
 .canvas-container canvas:not(.overlay-canvas) {
   display: block;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px var(--shadow-md), 0 2px 4px var(--shadow-sm);
   border-radius: 4px;
-  background: white;
+  background: var(--bg-secondary);
 }
 
 .overlay-canvas {

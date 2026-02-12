@@ -33,6 +33,8 @@
   --error-bg: #fff5f5;
   --error-text: #e53e3e;
   --error-border: #feb2b2;
+  --transparency-light: #e2e8f0;
+  --transparency-dark: #f7fafc;
 }
 
 /* Dark theme colors (default) */
@@ -54,6 +56,8 @@
   --error-bg: #742a2a;
   --error-text: #feb2b2;
   --error-border: #e53e3e;
+  --transparency-light: #374151;
+  --transparency-dark: #1f2937;
 }
 
 body {
