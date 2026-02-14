@@ -92,7 +92,7 @@ export function BackgroundRemovalPanel({
           <div className="ai-config-section">
             <div className="control-item">
               <div className="control-header">
-                <label>Model Quality</label>
+                <label htmlFor="model-quality-select">Model Quality</label>
                 <button
                   className="info-button"
                   onClick={() => setShowModelInfo(!showModelInfo)}
@@ -103,10 +103,12 @@ export function BackgroundRemovalPanel({
                 </button>
               </div>
               <select
+                id="model-quality-select"
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value as AIModel)}
                 disabled={isProcessing || isGeneratingPreview}
                 className="model-select"
+                aria-label="Model Quality"
               >
                 <option value="isnet">High Quality (Slow, ~170 MB)</option>
                 <option value="isnet_fp16">Balanced (Medium, ~85 MB)</option>
@@ -136,6 +138,8 @@ export function BackgroundRemovalPanel({
             <div className="control-item">
               <label>Processing Device</label>
               <select
+                id="processing-device-select"
+                aria-label="Processing Device"
                 value={selectedDevice}
                 onChange={(e) => setSelectedDevice(e.target.value as AIDevice)}
                 disabled={isProcessing || isGeneratingPreview}
