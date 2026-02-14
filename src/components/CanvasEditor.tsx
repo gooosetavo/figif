@@ -42,6 +42,7 @@ export function CanvasEditor({
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
@@ -137,10 +138,10 @@ export function CanvasEditor({
   // Track viewport dimensions for minimap
   useEffect(() => {
     const updateDimensions = () => {
-      if (editorRef.current) {
+      if (viewportRef.current) {
         setViewportDimensions({
-          width: editorRef.current.clientWidth,
-          height: editorRef.current.clientHeight,
+          width: viewportRef.current.clientWidth,
+          height: viewportRef.current.clientHeight,
         });
       }
     };
@@ -215,6 +216,7 @@ export function CanvasEditor({
     >
       {/* Interactive Canvas Area */}
       <div
+        ref={viewportRef}
         className="canvas-viewport"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
