@@ -66,10 +66,8 @@ function App() {
 
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0);
 
   const { decodeGif, isDecoding, error: decodeError } = useGifDecoder();
-  const { downloadGif, isEncoding, progress } = useGifEncoder();
 
   // Use the workspace context (includes both workspace and frame management)
   const workspaceManager = useWorkspace();
@@ -99,6 +97,14 @@ function App() {
     progress: bgProgress,
     aiProgress,
   } = useBackgroundRemoval();
+
+  // Use custom hooks for operations
+  const frameOps = useFrameOperations();
+  const { handleExport, handleExportWithOptions, exportProgress, setExportProgress, isEncoding, progress } = useExportOperations();
+  const { handleFileSelect } = useFileOperations();
+
+  // Keyboard shortcuts (side effects only)
+  useKeyboardShortcuts();
 
   // Sync workspace frames with frame manager when switching workspaces
   useEffect(() => {
