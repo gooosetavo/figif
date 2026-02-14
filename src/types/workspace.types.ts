@@ -23,6 +23,9 @@ export interface WorkspaceSnapshot {
   currentFrameIndex: number;
   description: string;
   isAutoSave: boolean;
+  currentFrameSize?: number; // Size of current frame in bytes
+  totalSize?: number; // Total size of all frames in bytes
+  originalFileSize?: number; // Original GIF file size in bytes (if available)
 }
 
 /**
@@ -46,6 +49,9 @@ export interface Workspace {
   historyStack: WorkspaceSnapshot[];
   currentHistoryIndex: number;
   previewData?: WorkspacePreviewData;
+  currentFrameSize?: number; // Size of current frame in bytes
+  totalSize?: number; // Total size of all frames in bytes
+  originalFileSize?: number; // Original GIF file size in bytes (if available)
 }
 
 /**

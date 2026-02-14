@@ -31,6 +31,7 @@ export const EditorMainContent = ({ onCanvasClick }: EditorMainContentProps) => 
     pause,
     goToNextFrame,
     goToPreviousFrame,
+    activeWorkspace,
   } = useWorkspace();
 
   const { handleReorderFrames: reorderFrames } = useFrameOperations();
@@ -54,6 +55,9 @@ export const EditorMainContent = ({ onCanvasClick }: EditorMainContentProps) => 
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
+        currentFrameSize={activeWorkspace?.currentFrameSize}
+        totalSize={activeWorkspace?.totalSize}
+        originalFileSize={activeWorkspace?.originalFileSize}
       />
       <Timeline
         frames={frames}

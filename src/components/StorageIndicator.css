@@ -1,0 +1,35 @@
+.storage-indicator {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  pointer-events: none;
+  user-select: none;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.storage-indicator-item {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.storage-indicator-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.storage-indicator-value {
+  color: rgba(255, 255, 255, 1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

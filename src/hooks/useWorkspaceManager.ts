@@ -27,6 +27,7 @@ import {
   isLocalStorageAvailable,
 } from '../utils/storage/localStorage';
 import { serializeFrames, deserializeFrames, generateThumbnail } from '../utils/serialization';
+import { calculateSerializedFrameSize, calculateSerializedTotalSize } from '../utils/storageSize';
 
 const MAX_HISTORY = 20;
 const DEBOUNCE_DELAY = 2000; // 2 seconds
@@ -126,6 +127,11 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
           frames = serializeFrames(gif.frames);
           thumbnail = generateThumbnail(gif.frames[0]);
 
+          // Calculate storage sizes
+          const totalSize = calculateSerializedTotalSize(frames);
+          const currentFrameSize = frames.length > 0 ? calculateSerializedFrameSize(frames[0]) : 0;
+          const originalFileSize = gif.originalFileSize;
+
           // Create initial snapshot for the original image
           initialSnapshot = {
             id: `snapshot-${Date.now()}-initial`,
@@ -134,6 +140,9 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
             currentFrameIndex: 0,
             description: 'Original image',
             isAutoSave: false,
+            currentFrameSize,
+            totalSize,
+            originalFileSize,
           };
         }
 
@@ -146,6 +155,9 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
           currentFrameIndex: 0,
           historyStack: initialSnapshot ? [initialSnapshot] : [],
           currentHistoryIndex: initialSnapshot ? 0 : -1,
+          currentFrameSize: initialSnapshot?.currentFrameSize,
+          totalSize: initialSnapshot?.totalSize,
+          originalFileSize: initialSnapshot?.originalFileSize,
         };
 
         const metadata: WorkspaceMetadata = {
@@ -259,19 +271,31 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
       if (!storageAvailable || !activeWorkspace) return;
 
       const performSave = async () => {
+        const serializedFrames = serializeFrames(frames);
+
+        // Calculate storage sizes
+        const totalSize = calculateSerializedTotalSize(serializedFrames);
+        const currentFrameSize = serializedFrames.length > currentFrameIndex
+          ? calculateSerializedFrameSize(serializedFrames[currentFrameIndex])
+          : 0;
+
         const snapshot: WorkspaceSnapshot = {
           id: `snapshot-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           timestamp: Date.now(),
-          frames: serializeFrames(frames),
+          frames: serializedFrames,
           currentFrameIndex,
           description,
           isAutoSave,
+          currentFrameSize,
+          totalSize,
         };
 
         const updatedWorkspace = { ...activeWorkspace };
         updatedWorkspace.lastModified = Date.now();
         updatedWorkspace.currentFrames = snapshot.frames;
         updatedWorkspace.currentFrameIndex = currentFrameIndex;
+        updatedWorkspace.currentFrameSize = currentFrameSize;
+        updatedWorkspace.totalSize = totalSize;
 
         // Add snapshot to history
         const newHistory = updatedWorkspace.historyStack.slice(0, updatedWorkspace.currentHistoryIndex + 1);
@@ -433,11 +457,19 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
     async (frames: GifFrame[], currentFrameIndex: number): Promise<void> => {
       if (!activeWorkspace) return;
 
+      const serializedFrames = serializeFrames(frames);
+      const totalSize = calculateSerializedTotalSize(serializedFrames);
+      const currentFrameSize = serializedFrames.length > currentFrameIndex
+        ? calculateSerializedFrameSize(serializedFrames[currentFrameIndex])
+        : 0;
+
       const updatedWorkspace = {
         ...activeWorkspace,
-        currentFrames: serializeFrames(frames),
+        currentFrames: serializedFrames,
         currentFrameIndex,
         lastModified: Date.now(),
+        currentFrameSize,
+        totalSize,
       };
 
       await saveWorkspaceDB(updatedWorkspace);

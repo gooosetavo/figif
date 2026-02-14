@@ -16,6 +16,7 @@ export interface GifMetadata {
 export interface DecodedGif {
   frames: GifFrame[];
   metadata: GifMetadata;
+  originalFileSize?: number; // Original file size in bytes (if loaded from file)
 }
 
 export interface EditState {

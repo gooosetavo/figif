@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import type { WorkspaceSnapshot } from '../../types/workspace.types';
 import type { GifFrame } from '../../types/gif.types';
 import { deserializeFrame } from '../../utils/serialization';
+import { formatBytes, estimateGifSize } from '../../utils/storageSize';
 import './HistoryPanel.css';
 
 interface HistoryPanelProps {
@@ -47,6 +48,28 @@ export function HistoryPanel({
   };
 
   const hasUnsavedChanges = currentFrames.length > 0 && historyStack.length === 0;
+
+  // Calculate totals from current snapshot
+  const currentSnapshot = historyStack[currentHistoryIndex];
+  const totalStats = useMemo(() => {
+    if (!currentSnapshot) {
+      return null;
+    }
+
+    const frameCount = currentSnapshot.frames.length;
+    const rawSize = currentSnapshot.totalSize || 0;
+    const gifSize = currentSnapshot.originalFileSize ?? estimateGifSize(rawSize);
+    const isOriginal = currentSnapshot.originalFileSize !== undefined;
+    const snapshotCount = historyStack.length;
+
+    return {
+      frameCount,
+      rawSize,
+      gifSize,
+      isOriginal,
+      snapshotCount,
+    };
+  }, [currentSnapshot, historyStack.length]);
 
   // Generate thumbnails for snapshots
   const snapshotThumbnails = useMemo(() => {
@@ -148,6 +171,21 @@ export function HistoryPanel({
                       <span className="history-snapshot-frames">
                         {snapshot.frames.length} frame{snapshot.frames.length !== 1 ? 's' : ''}
                       </span>
+                      {snapshot.originalFileSize !== undefined && (
+                        <span className="history-snapshot-size" title="Original GIF file size">
+                          GIF: {formatBytes(snapshot.originalFileSize)}
+                        </span>
+                      )}
+                      {snapshot.originalFileSize === undefined && snapshot.totalSize !== undefined && (
+                        <span className="history-snapshot-size" title="Estimated GIF export size">
+                          Est: {formatBytes(estimateGifSize(snapshot.totalSize))}
+                        </span>
+                      )}
+                      {snapshot.totalSize !== undefined && (
+                        <span className="history-snapshot-size" title="Raw uncompressed storage">
+                          Raw: {formatBytes(snapshot.totalSize)}
+                        </span>
+                      )}
                     </div>
                   </div>
                   {isCurrent && (
@@ -164,6 +202,45 @@ export function HistoryPanel({
         <div className="history-empty">
           <p>No history yet</p>
           <p className="history-empty-hint">Make edits to create version history</p>
+        </div>
+      )}
+
+      {totalStats && (
+        <div className="history-totals">
+          <div className="history-totals-header">Current State</div>
+          <div className="history-totals-grid">
+            <div
+              className="history-totals-item"
+              title="Total number of animation frames in the current snapshot"
+            >
+              <span className="history-totals-label">Frames:</span>
+              <span className="history-totals-value">{totalStats.frameCount}</span>
+            </div>
+            <div
+              className="history-totals-item"
+              title="Number of saved history snapshots (undo/redo states)"
+            >
+              <span className="history-totals-label">Snapshots:</span>
+              <span className="history-totals-value">{totalStats.snapshotCount}</span>
+            </div>
+            <div
+              className="history-totals-item"
+              title="Uncompressed RGBA pixel data (4 bytes per pixel). Required for editing but much larger than compressed GIF files."
+            >
+              <span className="history-totals-label">Raw Storage:</span>
+              <span className="history-totals-value">{formatBytes(totalStats.rawSize)}</span>
+            </div>
+            <div
+              className="history-totals-item"
+              title={totalStats.isOriginal
+                ? "Original GIF file size with LZW compression and palette optimization. This is what you loaded."
+                : "Estimated GIF export size (~12x compression). Actual size depends on image complexity and optimization settings."
+              }
+            >
+              <span className="history-totals-label">{totalStats.isOriginal ? 'Original GIF:' : 'Est. GIF:'}</span>
+              <span className="history-totals-value">{formatBytes(totalStats.gifSize)}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

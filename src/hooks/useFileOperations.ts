@@ -9,6 +9,7 @@ export const useFileOperations = () => {
   const handleFileSelect = async (file: File) => {
     try {
       let decodedGif;
+      const originalFileSize = file.size; // Capture original file size in bytes
 
       // Check if file is a GIF or needs conversion
       if (isGifFile(file)) {
@@ -17,6 +18,9 @@ export const useFileOperations = () => {
         // Convert static image to GIF
         decodedGif = await convertImageToGif(file);
       }
+
+      // Attach original file size to decoded gif
+      decodedGif.originalFileSize = originalFileSize;
 
       // Create or load into workspace
       if (!activeWorkspace) {

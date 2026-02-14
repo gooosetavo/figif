@@ -3,6 +3,7 @@ import type { GifFrame } from '../types/gif.types';
 import { CropOverlay } from './CropOverlay';
 import { CanvasZoomControls } from './CanvasZoomControls';
 import { CanvasMinimap } from './CanvasMinimap';
+import { StorageIndicator } from './StorageIndicator';
 import type { CropSelection } from './Panels/CropPanel';
 import './CanvasEditor.css';
 
@@ -17,6 +18,9 @@ interface CanvasEditorProps {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
+  currentFrameSize?: number;
+  totalSize?: number;
+  originalFileSize?: number;
 }
 
 export function CanvasEditor({
@@ -30,6 +34,9 @@ export function CanvasEditor({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  currentFrameSize,
+  totalSize,
+  originalFileSize,
 }: CanvasEditorProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -250,6 +257,13 @@ export function CanvasEditor({
         scrollLeft={-pan.x}
         scrollTop={-pan.y}
         onViewportChange={handleViewportChange}
+      />
+
+      {/* Storage Indicator */}
+      <StorageIndicator
+        currentFrameSize={currentFrameSize}
+        totalSize={totalSize}
+        originalFileSize={originalFileSize}
       />
     </div>
   );
