@@ -29,7 +29,7 @@ import './App.css';
 function App() {
   const { theme, toggleTheme } = useTheme();
 
-  // Use the editor state hook
+  // Use the editor context
   const {
     zoom,
     handleZoomIn,
@@ -61,7 +61,7 @@ function App() {
     setSelectedFrames,
     showPreviewModal,
     setShowPreviewModal,
-  } = useEditorState();
+  } = useEditor();
 
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
@@ -69,6 +69,9 @@ function App() {
 
   const { decodeGif, isDecoding, error: decodeError } = useGifDecoder();
   const { downloadGif, isEncoding, progress } = useGifEncoder();
+
+  // Use the workspace context (includes both workspace and frame management)
+  const workspaceManager = useWorkspace();
   const {
     frames,
     currentFrameIndex,
@@ -82,7 +85,8 @@ function App() {
     setFrames,
     reverseFrames,
     updateAllFrameDelays,
-  } = useFrameManager();
+  } = workspaceManager;
+
   const {
     removeBackgroundFromFrame,
     removeBackgroundFromFrames,
@@ -94,9 +98,6 @@ function App() {
     progress: bgProgress,
     aiProgress,
   } = useBackgroundRemoval();
-
-  // Workspace manager
-  const workspaceManager = useWorkspaceManager();
 
   // Sync workspace frames with frame manager when switching workspaces
   useEffect(() => {
