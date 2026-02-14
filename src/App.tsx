@@ -67,7 +67,7 @@ function App() {
   // Export modal state
   const [showExportModal, setShowExportModal] = useState(false);
 
-  const { decodeGif, isDecoding, error: decodeError } = useGifDecoder();
+  const { isDecoding, error: decodeError } = useGifDecoder();
 
   // Use the workspace context (includes both workspace and frame management)
   const workspaceManager = useWorkspace();
@@ -80,10 +80,7 @@ function App() {
     goToPreviousFrame,
     play,
     pause,
-    loadGif,
     setFrames,
-    reverseFrames,
-    updateAllFrameDelays,
   } = workspaceManager;
 
   const {
@@ -100,7 +97,7 @@ function App() {
 
   // Use custom hooks for operations
   const frameOps = useFrameOperations();
-  const { handleExport, handleExportWithOptions, exportProgress, setExportProgress, isEncoding, progress } = useExportOperations();
+  const { handleExport, handleExportWithOptions, exportProgress, isEncoding, progress } = useExportOperations();
   const { handleFileSelect } = useFileOperations();
 
   // Keyboard shortcuts (side effects only)
@@ -162,6 +159,117 @@ function App() {
 
   const handleSpeedChange = (multiplier: number) => {
     frameOps.handleSpeedChange(multiplier);
+  };
+
+  // Transform operations (still in App.tsx for now)
+  const handleApplyPadding = async (scope: 'current' | 'all', left: number, right: number, top: number, bottom: number) => {
+    if (frames.length === 0) return;
+
+    try {
+      if (scope === 'current') {
+        const paddedFrame = addCustomPadding(frames[currentFrameIndex], left, right, top, bottom);
+        const newFrames = [...frames];
+        newFrames[currentFrameIndex] = paddedFrame;
+        setFrames(newFrames);
+
+        if (workspaceManager.activeWorkspace) {
+          await workspaceManager.saveSnapshot(
+            newFrames,
+            currentFrameIndex,
+            `Applied padding to current frame (L:${left} R:${right} T:${top} B:${bottom})`,
+            true
+          );
+        }
+      } else {
+        const paddedFrames = frames.map((frame: typeof frames[0]) => addCustomPadding(frame, left, right, top, bottom));
+        setFrames(paddedFrames);
+
+        if (workspaceManager.activeWorkspace) {
+          await workspaceManager.saveSnapshot(
+            paddedFrames,
+            currentFrameIndex,
+            `Applied padding to all frames (L:${left} R:${right} T:${top} B:${bottom})`,
+            true
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Failed to apply padding:', err);
+    }
+  };
+
+  const handleRotate = async (clockwise: boolean, scope: 'current' | 'selected' | 'all') => {
+    if (frames.length === 0) return;
+
+    try {
+      const newFrames = [...frames];
+      const framesToRotate = scope === 'all'
+        ? Array.from({ length: frames.length }, (_, i) => i)
+        : scope === 'selected'
+        ? Array.from(selectedFrames)
+        : [currentFrameIndex];
+
+      for (const index of framesToRotate) {
+        newFrames[index] = rotate90(frames[index], clockwise);
+      }
+
+      setFrames(newFrames);
+
+      if (workspaceManager.activeWorkspace) {
+        const direction = clockwise ? 'clockwise' : 'counterclockwise';
+        const scopeText = scope === 'all'
+          ? 'all frames'
+          : scope === 'selected'
+          ? `${framesToRotate.length} selected frame${framesToRotate.length !== 1 ? 's' : ''}`
+          : 'current frame';
+
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          currentFrameIndex,
+          `Rotated 90° ${direction} (${scopeText})`,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('Failed to rotate frames:', err);
+    }
+  };
+
+  const handleFlip = async (horizontal: boolean, scope: 'current' | 'selected' | 'all') => {
+    if (frames.length === 0) return;
+
+    try {
+      const newFrames = [...frames];
+      const framesToFlip = scope === 'all'
+        ? Array.from({ length: frames.length }, (_, i) => i)
+        : scope === 'selected'
+        ? Array.from(selectedFrames)
+        : [currentFrameIndex];
+
+      for (const index of framesToFlip) {
+        newFrames[index] = flipFrame(frames[index], horizontal);
+      }
+
+      setFrames(newFrames);
+
+      if (workspaceManager.activeWorkspace) {
+        const direction = horizontal ? 'horizontally' : 'vertically';
+        const scopeText = scope === 'all'
+          ? 'all frames'
+          : scope === 'selected'
+          ? `${framesToFlip.length} selected frame${framesToFlip.length !== 1 ? 's' : ''}`
+          : 'current frame';
+
+        await workspaceManager.saveSnapshot(
+          newFrames,
+          currentFrameIndex,
+          `Flipped ${direction} (${scopeText})`,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('Failed to flip frames:', err);
+    }
   };
 
   const handleRemoveBackground = async (
@@ -779,7 +887,13 @@ function App() {
       <ExportModal
         isOpen={showExportModal}
         onClose={() => setShowExportModal(false)}
-        onExport={handleExportWithOptions}
+        onExport={(options) => {
+          handleExportWithOptions(options, selectedFrames);
+          // Close modal after successful export
+          setTimeout(() => {
+            setShowExportModal(false);
+          }, 1000);
+        }}
         totalFrames={frames.length}
         selectedFramesCount={selectedFrames.size}
         isExporting={exportProgress > 0 && exportProgress < 100}
