@@ -33,9 +33,13 @@ export const EditorMainContent = ({ onCanvasClick }: EditorMainContentProps) => 
     goToPreviousFrame,
   } = useWorkspace();
 
-  const { handleReorderFrames } = useFrameOperations();
+  const { handleReorderFrames: reorderFrames } = useFrameOperations();
 
   const currentFrame = frames[currentFrameIndex] || null;
+
+  const handleReorderFrames = (fromIndex: number, toIndex: number) => {
+    reorderFrames(fromIndex, toIndex, selectedFrames, setSelectedFrames);
+  };
 
   return (
     <main className="main-content">

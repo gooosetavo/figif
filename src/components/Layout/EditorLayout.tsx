@@ -1,5 +1,6 @@
 import type { CropSelection } from '../Panels/CropPanel';
-import type { RemovalMode, AIBackgroundRemovalConfig } from '../../utils/backgroundRemoval';
+import type { RemovalMode } from '../../hooks/useBackgroundRemoval';
+import type { AIBackgroundRemovalConfig } from '../../types/gif.types';
 import type { GifEffect } from '../Panels/BackgroundRemovalPanel';
 import { EditorSidebar } from './EditorSidebar';
 import { EditorMainContent } from './EditorMainContent';

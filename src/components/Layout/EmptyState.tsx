@@ -8,9 +8,9 @@ interface EmptyStateProps {
 
 export const EmptyState = ({ onFileSelect }: EmptyStateProps) => {
   const { isDecoding, error: decodeError } = useGifDecoder();
-  const { workspaceManager } = useWorkspace();
+  const { isLoading, isCreatingWorkspace } = useWorkspace();
 
-  if (workspaceManager.isLoading) {
+  if (isLoading) {
     return (
       <div className="upload-container">
         <p>Loading workspace...</p>
@@ -22,7 +22,7 @@ export const EmptyState = ({ onFileSelect }: EmptyStateProps) => {
     <div className="upload-container">
       <FileUpload
         onFileSelect={onFileSelect}
-        isLoading={isDecoding || workspaceManager.isCreatingWorkspace}
+        isLoading={isDecoding || isCreatingWorkspace}
       />
       {decodeError && <p className="error-message">{decodeError}</p>}
     </div>

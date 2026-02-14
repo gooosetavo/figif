@@ -1,5 +1,6 @@
 import type { CropSelection } from '../Panels/CropPanel';
-import type { RemovalMode, AIBackgroundRemovalConfig } from '../../utils/backgroundRemoval';
+import type { RemovalMode } from '../../hooks/useBackgroundRemoval';
+import type { AIBackgroundRemovalConfig } from '../../types/gif.types';
 import { FrameControls } from '../Sidebar/FrameControls';
 import { PaddingControls } from '../Sidebar/PaddingControls';
 import { TransformControls } from '../Sidebar/TransformControls';
@@ -59,10 +60,19 @@ export const EditorSidebar = ({
   } = useEditor();
 
   const { frames, currentFrameIndex } = useWorkspace();
-  const { handleDuplicateFrame, handleDeleteFrame, handleReverseFrames, handleRemoveEveryOtherFrame, handleDuplicateAllFrames, handleKeepEveryNthFrame, handleSpeedChange } = useFrameOperations();
-  const { isBgProcessing, bgProgress, isGeneratingPreview, aiProgress } = useBackgroundRemoval();
+  const frameOps = useFrameOperations();
+  const { isProcessing, progress, isGeneratingPreview, aiProgress } = useBackgroundRemoval();
 
   const currentFrame = frames[currentFrameIndex] || null;
+
+  // Wrapper functions to pass selectedFrames to the hook handlers
+  const handleDuplicateFrame = (scope: 'current' | 'selected') => {
+    frameOps.handleDuplicateFrame(scope, selectedFrames);
+  };
+
+  const handleDeleteFrame = (scope: 'current' | 'selected') => {
+    frameOps.handleDeleteFrame(scope, selectedFrames);
+  };
 
   return (
     <aside className="sidebar">
@@ -71,11 +81,11 @@ export const EditorSidebar = ({
         selectedFramesCount={selectedFrames.size}
         onDuplicateFrame={handleDuplicateFrame}
         onDeleteFrame={handleDeleteFrame}
-        onReverseFrames={handleReverseFrames}
-        onRemoveEveryOtherFrame={handleRemoveEveryOtherFrame}
-        onDuplicateAllFrames={handleDuplicateAllFrames}
-        onKeepEveryNthFrame={handleKeepEveryNthFrame}
-        onSpeedChange={handleSpeedChange}
+        onReverseFrames={frameOps.handleReverseFrames}
+        onRemoveEveryOtherFrame={frameOps.handleRemoveEveryOtherFrame}
+        onDuplicateAllFrames={frameOps.handleDuplicateAllFrames}
+        onKeepEveryNthFrame={frameOps.handleKeepEveryNthFrame}
+        onSpeedChange={frameOps.handleSpeedChange}
       />
 
       <PaddingControls
@@ -164,8 +174,8 @@ export const EditorSidebar = ({
               tolerance={manualTolerance}
               onToleranceChange={setManualTolerance}
               selectionCount={selectionPoints.length}
-              isProcessing={isBgProcessing}
-              progress={bgProgress}
+              isProcessing={isProcessing}
+              progress={progress}
               isManualMode={isManualSelectionMode}
               isGeneratingPreview={isGeneratingPreview}
               aiProgress={aiProgress}
