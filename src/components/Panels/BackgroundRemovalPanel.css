@@ -252,7 +252,7 @@
 }
 
 .model-info-box h4 {
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
   color: var(--text-primary);
   font-size: 14px;
 }
@@ -276,7 +276,7 @@
 .model-description {
   font-size: 13px;
   color: var(--text-tertiary);
-  margin: 8px 0 0 0;
+  margin: 8px 0 0;
   line-height: 1.4;
 }
 
@@ -298,6 +298,6 @@
 .progress-stage {
   font-size: 13px;
   color: var(--text-secondary);
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
   font-weight: 500;
 }

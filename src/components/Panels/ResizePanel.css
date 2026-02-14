@@ -58,7 +58,7 @@
 .resize-input-group input[type="number"]:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgb(102 126 234 / 10%);
 }
 
 .resize-input-group input[type="number"]:disabled {
@@ -133,12 +133,12 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 4px rgb(102 126 234 / 20%);
 }
 
 .resize-apply-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgb(102 126 234 / 30%);
 }
 
 .resize-apply-button:disabled {

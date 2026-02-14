@@ -87,7 +87,7 @@
 
 .timeline-frame.active {
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 0 0 3px rgb(102 126 234 / 30%);
 }
 
 .timeline-frame.selected {
@@ -97,7 +97,7 @@
 
 .timeline-frame.selected.active {
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 0 0 3px rgb(102 126 234 / 30%);
 }
 
 .timeline-frame.dragging {
@@ -122,7 +122,7 @@
   position: absolute;
   top: 2px;
   left: 4px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgb(0 0 0 / 70%);
   color: white;
   padding: 2px 6px;
   border-radius: 3px;
@@ -134,7 +134,7 @@
   position: absolute;
   bottom: 2px;
   right: 4px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgb(0 0 0 / 70%);
   color: white;
   padding: 2px 6px;
   border-radius: 3px;

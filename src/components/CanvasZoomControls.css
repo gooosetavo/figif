@@ -12,6 +12,7 @@
   padding: 4px;
   box-shadow: 0 2px 8px var(--shadow-md);
   transform: none;
+}
 
 .canvas-zoom-button {
   width: 36px;
@@ -45,7 +46,7 @@
   font-weight: 500;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .canvas-zoom-controls {
     top: 8px;
     left: 8px;

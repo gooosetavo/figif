@@ -7,8 +7,7 @@
 .workspace-tabs-container {
   display: flex;
   gap: 4px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: auto hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--text-tertiary) var(--bg-primary);
 }
@@ -56,7 +55,7 @@
   border-color: var(--accent-primary);
   border-bottom: 2px solid var(--bg-secondary);
   margin-bottom: -2px;
-  box-shadow: 0 -2px 4px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 -2px 4px rgb(102 126 234 / 10%);
 }
 
 .workspace-tab.active::before {
@@ -152,7 +151,7 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .workspace-tab {
     min-width: 140px;
     max-width: 180px;

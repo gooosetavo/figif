@@ -17,7 +17,7 @@
   cursor: grabbing;
 }
 
-.canvas-editor:not(.panning):not(.selection-mode) .canvas-viewport {
+.canvas-editor:not(.panning, .selection-mode) .canvas-viewport {
   cursor: grab;
 }
 

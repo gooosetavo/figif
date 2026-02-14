@@ -57,12 +57,27 @@ export const CanvasMinimap = ({
       ctx.drawImage(frame.canvas, 0, 0, canvas.width, canvas.height);
     }
 
-    // Draw viewport rectangle
+    // Calculate where the canvas is positioned in the viewport
+    // The canvas is centered by flexbox, then transformed by pan
+    const canvasWidth = frame.imageData.width * zoom;
+    const canvasHeight = frame.imageData.height * zoom;
+
+    // Canvas top-left position in viewport (accounting for centering and pan)
+    const canvasX = viewportWidth / 2 - canvasWidth / 2 + scrollLeft;
+    const canvasY = viewportHeight / 2 - canvasHeight / 2 + scrollTop;
+
+    // Calculate visible region in image coordinates
+    const visibleX = -canvasX / zoom;
+    const visibleY = -canvasY / zoom;
+    const visibleWidth = viewportWidth / zoom;
+    const visibleHeight = viewportHeight / zoom;
+
+    // Draw viewport rectangle in minimap coordinates
     const viewportRect = {
-      x: (scrollLeft / zoom) * scale,
-      y: (scrollTop / zoom) * scale,
-      width: (viewportWidth / zoom) * scale,
-      height: (viewportHeight / zoom) * scale,
+      x: visibleX * scale,
+      y: visibleY * scale,
+      width: visibleWidth * scale,
+      height: visibleHeight * scale,
     };
 
     ctx.strokeStyle = '#667eea';
@@ -163,9 +178,9 @@ export const CanvasMinimap = ({
       <canvas
         ref={canvasRef}
         className="canvas-minimap"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseDownCapture={handleMouseDown}
+        onMouseMoveCapture={handleMouseMove}
+        onMouseUpCapture={handleMouseUp}
         onMouseLeave={handleMouseUp}
       />
     </div>

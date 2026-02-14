@@ -49,12 +49,12 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 4px rgb(102 126 234 / 20%);
 }
 
 .history-save-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgb(102 126 234 / 30%);
 }
 
 .unsaved-indicator {
@@ -118,7 +118,7 @@
 .history-snapshot.current {
   background: var(--bg-tertiary);
   border-color: #667eea;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 2px 4px rgb(102 126 234 / 10%);
 }
 
 .history-snapshot.future {

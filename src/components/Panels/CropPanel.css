@@ -13,7 +13,7 @@
 }
 
 .crop-info p {
-  margin: 0 0 8px 0;
+  margin: 0 0 8px;
   font-size: 13px;
   color: var(--text-secondary);
 }
@@ -34,12 +34,12 @@
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 4px rgb(102 126 234 / 20%);
 }
 
 .crop-start-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgb(102 126 234 / 30%);
 }
 
 .crop-start-button:disabled {
@@ -113,7 +113,7 @@
 .crop-input-group input[type="number"]:focus {
   outline: none;
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgb(102 126 234 / 10%);
 }
 
 .crop-input-group input[type="number"]:disabled {
@@ -187,12 +187,12 @@
 .crop-apply-button {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 2px 4px rgb(102 126 234 / 20%);
 }
 
 .crop-apply-button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgb(102 126 234 / 30%);
 }
 
 .crop-cancel-button:disabled,

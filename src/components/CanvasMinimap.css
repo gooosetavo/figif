@@ -33,7 +33,7 @@
   cursor: grabbing;
 }
 
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .canvas-minimap-container {
     top: 8px;
     right: 8px;
