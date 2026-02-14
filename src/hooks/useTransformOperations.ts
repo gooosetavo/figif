@@ -184,11 +184,48 @@ export const useTransformOperations = () => {
     }
   };
 
+  const handleSpin = async (clockwise: boolean) => {
+    if (frames.length === 0) return;
+
+    try {
+      const newFrames = [...frames];
+
+      // Rotate each frame progressively
+      // Frame 0: 0 rotations, Frame 1: 1 rotation (90°), Frame 2: 2 rotations (180°), etc.
+      for (let i = 0; i < frames.length; i++) {
+        let currentFrame = frames[i];
+        const rotations = i % 4; // 0, 1, 2, 3 (cycles every 4 frames)
+
+        // Apply the number of 90° rotations
+        for (let r = 0; r < rotations; r++) {
+          currentFrame = rotate90(currentFrame, clockwise);
+        }
+
+        newFrames[i] = currentFrame;
+      }
+
+      setFrames(newFrames);
+
+      if (activeWorkspace) {
+        const direction = clockwise ? 'clockwise' : 'counterclockwise';
+        await saveSnapshot(
+          newFrames,
+          currentFrameIndex,
+          `Applied spin effect (${direction})`,
+          true
+        );
+      }
+    } catch (err) {
+      console.error('Failed to apply spin effect:', err);
+    }
+  };
+
   return {
     handleApplyPadding,
     handleRotate,
     handleFlip,
     handleResize,
     handleCrop,
+    handleSpin,
   };
 };

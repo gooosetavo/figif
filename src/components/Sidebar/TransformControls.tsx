@@ -5,6 +5,7 @@ interface TransformControlsProps {
   selectedFramesCount: number;
   onRotate: (clockwise: boolean, scope: 'current' | 'selected' | 'all') => void;
   onFlip: (horizontal: boolean, scope: 'current' | 'selected' | 'all') => void;
+  onSpin: (clockwise: boolean) => void;
 }
 
 export const TransformControls = ({
@@ -12,6 +13,7 @@ export const TransformControls = ({
   selectedFramesCount,
   onRotate,
   onFlip,
+  onSpin,
 }: TransformControlsProps) => {
   const [showTransform, setShowTransform] = useState(false);
 
@@ -153,6 +155,33 @@ export const TransformControls = ({
                 ↕ Flip Vertical (All)
               </button>
             </div>
+          </div>
+
+          <div style={{ marginTop: '12px' }}>
+            <label style={{ fontSize: '14px', fontWeight: 500, marginBottom: '8px', display: 'block' }}>Spin Effect</label>
+            <div className="button-group-vertical" style={{ gap: '4px' }}>
+              <button
+                onClick={() => onSpin(true)}
+                disabled={framesCount < 2}
+                className="action-button warning"
+                style={{ fontSize: '13px', padding: '8px' }}
+                title="Rotate each frame progressively clockwise (creates spinning effect)"
+              >
+                🔄 Spin Clockwise (All)
+              </button>
+              <button
+                onClick={() => onSpin(false)}
+                disabled={framesCount < 2}
+                className="action-button warning"
+                style={{ fontSize: '13px', padding: '8px' }}
+                title="Rotate each frame progressively counter-clockwise (creates spinning effect)"
+              >
+                🔄 Spin Counter-Clockwise (All)
+              </button>
+            </div>
+            <p style={{ fontSize: '12px', color: '#718096', marginTop: '8px', fontStyle: 'italic' }}>
+              Each frame rotates 90° more than the previous (0°, 90°, 180°, 270°, ...)
+            </p>
           </div>
 
           <p style={{ fontSize: '12px', color: '#718096', marginTop: '12px', lineHeight: '1.4' }}>

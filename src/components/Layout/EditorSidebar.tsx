@@ -16,6 +16,7 @@ interface EditorSidebarProps {
   onApplyPadding: (scope: 'current' | 'all', left: number, right: number, top: number, bottom: number) => Promise<void>;
   onRotate: (clockwise: boolean, scope: 'current' | 'selected' | 'all') => Promise<void>;
   onFlip: (horizontal: boolean, scope: 'current' | 'selected' | 'all') => Promise<void>;
+  onSpin: (clockwise: boolean) => Promise<void>;
   onResize: (width: number, height: number, maintainAspectRatio: boolean) => Promise<void>;
   onCrop: (selection: CropSelection) => Promise<void>;
   onRemoveBackground: (mode: RemovalMode, target: 'current' | 'all', config?: AIBackgroundRemovalConfig) => Promise<void>;
@@ -31,6 +32,7 @@ export const EditorSidebar = ({
   onApplyPadding,
   onRotate,
   onFlip,
+  onSpin,
   onResize,
   onCrop,
   onRemoveBackground,
@@ -98,6 +100,7 @@ export const EditorSidebar = ({
         selectedFramesCount={selectedFrames.size}
         onRotate={onRotate}
         onFlip={onFlip}
+        onSpin={onSpin}
       />
 
       <div className="control-section">

@@ -91,6 +91,7 @@ function App() {
     transformOps.handleRotate(clockwise, scope, selectedFrames);
   const handleFlip = (horizontal: boolean, scope: 'current' | 'selected' | 'all') =>
     transformOps.handleFlip(horizontal, scope, selectedFrames);
+  const handleSpin = (clockwise: boolean) => transformOps.handleSpin(clockwise);
   const handleResize = (width: number, height: number, maintainAspectRatio: boolean) =>
     transformOps.handleResize(width, height, maintainAspectRatio, setIsResizing);
   const handleCrop = (selection: CropSelection) =>
@@ -183,6 +184,7 @@ function App() {
           onApplyPadding={handleApplyPadding}
           onRotate={handleRotate}
           onFlip={handleFlip}
+          onSpin={handleSpin}
           onResize={handleResize}
           onCrop={handleCrop}
           onRemoveBackground={handleRemoveBackground}
