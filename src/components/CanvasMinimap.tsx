@@ -107,18 +107,23 @@ export const CanvasMinimap = ({
     const x = clientX - rect.left;
     const y = clientY - rect.top;
 
-    // Convert minimap coordinates to main canvas coordinates
+    // Convert minimap coordinates to image coordinates (unzoomed)
     const scale = Math.min(
       MINIMAP_SIZE / frame.imageData.width,
       MINIMAP_SIZE / frame.imageData.height
     );
 
-    const imageX = (x / scale) * zoom;
-    const imageY = (y / scale) * zoom;
+    const imageX = x / scale;
+    const imageY = y / scale;
+
+    // Calculate canvas dimensions
+    const canvasWidth = frame.imageData.width * zoom;
+    const canvasHeight = frame.imageData.height * zoom;
 
     // Center the viewport on the clicked position
-    const newScrollLeft = imageX - viewportWidth / 2;
-    const newScrollTop = imageY - viewportHeight / 2;
+    // scrollLeft/Top represent the offset from the centered position
+    const newScrollLeft = canvasWidth / 2 - imageX * zoom;
+    const newScrollTop = canvasHeight / 2 - imageY * zoom;
 
     onViewportChange(newScrollLeft, newScrollTop);
   }, [frame, zoom, viewportWidth, viewportHeight, onViewportChange]);
