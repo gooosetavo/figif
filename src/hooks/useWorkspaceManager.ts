@@ -120,10 +120,21 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
 
         let frames: SerializedFrame[] = [];
         let thumbnail: string | undefined;
+        let initialSnapshot: WorkspaceSnapshot | undefined;
 
         if (gif) {
           frames = serializeFrames(gif.frames);
           thumbnail = generateThumbnail(gif.frames[0]);
+
+          // Create initial snapshot for the original image
+          initialSnapshot = {
+            id: `snapshot-${Date.now()}-initial`,
+            timestamp: now,
+            frames: frames,
+            currentFrameIndex: 0,
+            description: 'Original image',
+            isAutoSave: false,
+          };
         }
 
         const workspace: Workspace = {
@@ -133,8 +144,8 @@ export function useWorkspaceManager(): UseWorkspaceManagerReturn {
           lastModified: now,
           currentFrames: frames,
           currentFrameIndex: 0,
-          historyStack: [],
-          currentHistoryIndex: -1,
+          historyStack: initialSnapshot ? [initialSnapshot] : [],
+          currentHistoryIndex: initialSnapshot ? 0 : -1,
         };
 
         const metadata: WorkspaceMetadata = {

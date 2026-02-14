@@ -2,7 +2,7 @@ export const AppFooter = () => {
   return (
     <footer className="app-footer">
       <p>
-        Made with ❤️ | All processing happens in your browser
+        All processing happens in your browser
         {import.meta.env.VITE_GITHUB_URL && (
           <>
             {' | '}
