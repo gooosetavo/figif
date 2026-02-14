@@ -36,8 +36,8 @@ export function StorageIndicator({ currentFrameSize, totalSize, originalFileSize
         className="storage-indicator-item"
         title={
           originalFileSize
-            ? 'Original GIF file size with LZW compression and palette optimization'
-            : 'Estimated GIF export size with compression (~12x smaller than raw)'
+            ? 'Original file size with LZW compression and palette optimization'
+            : 'Estimated export size with compression (~12x smaller than raw)'
         }
       >
         <span className="storage-indicator-label">{gifSizeLabel}</span>

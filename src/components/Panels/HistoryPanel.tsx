@@ -233,11 +233,11 @@ export function HistoryPanel({
             <div
               className="history-totals-item"
               title={totalStats.isOriginal
-                ? "Original GIF file size with LZW compression and palette optimization. This is what you loaded."
+                ? "Original file size with LZW compression and palette optimization. This is what you loaded."
                 : "Estimated GIF export size (~12x compression). Actual size depends on image complexity and optimization settings."
               }
             >
-              <span className="history-totals-label">{totalStats.isOriginal ? 'Original GIF:' : 'Est. GIF:'}</span>
+              <span className="history-totals-label">{totalStats.isOriginal ? 'Original:' : 'Est.:'}</span>
               <span className="history-totals-value">{formatBytes(totalStats.gifSize)}</span>
             </div>
           </div>

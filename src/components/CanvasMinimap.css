@@ -1,6 +1,6 @@
 .canvas-minimap-container {
   position: absolute;
-  bottom: 16px;
+  top: 16px;
   right: 16px;
   z-index: 100;
   pointer-events: auto;
@@ -9,6 +9,7 @@
   border-radius: 8px;
   padding: 8px;
   box-shadow: 0 4px 12px var(--shadow-md);
+  transform: none;
 }
 
 .canvas-minimap-label {
@@ -34,7 +35,7 @@
 
 @media (max-width: 768px) {
   .canvas-minimap-container {
-    bottom: 8px;
+    top: 8px;
     right: 8px;
     padding: 6px;
   }

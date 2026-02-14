@@ -212,59 +212,66 @@ export function CanvasEditor({
     <div
       ref={editorRef}
       className={`canvas-editor ${isPanning ? 'panning' : ''} ${selectionMode ? 'selection-mode' : ''}`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
     >
-      {/* Zoom Controls */}
-      {onZoomIn && onZoomOut && onZoomReset && (
-        <CanvasZoomControls
-          zoom={zoom}
-          onZoomIn={onZoomIn}
-          onZoomOut={onZoomOut}
-          onZoomReset={onZoomReset}
-        />
-      )}
-
-      {/* Main Canvas */}
+      {/* Interactive Canvas Area */}
       <div
-        ref={containerRef}
-        className="canvas-container"
-        style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-        }}
+        className="canvas-viewport"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
-        <canvas ref={canvasRef} />
-        <canvas ref={overlayCanvasRef} className="overlay-canvas" />
-        {cropSelection && onCropSelectionChange && (
-          <CropOverlay
-            canvasWidth={frame.imageData.width}
-            canvasHeight={frame.imageData.height}
-            zoom={1}
-            cropSelection={cropSelection}
-            onCropSelectionChange={onCropSelectionChange}
-          />
-        )}
+        <div
+          ref={containerRef}
+          className="canvas-container"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          }}
+        >
+          <canvas ref={canvasRef} />
+          <canvas ref={overlayCanvasRef} className="overlay-canvas" />
+          {cropSelection && onCropSelectionChange && (
+            <CropOverlay
+              canvasWidth={frame.imageData.width}
+              canvasHeight={frame.imageData.height}
+              zoom={1}
+              cropSelection={cropSelection}
+              onCropSelectionChange={onCropSelectionChange}
+            />
+          )}
+        </div>
       </div>
 
-      {/* Minimap */}
-      <CanvasMinimap
-        frame={frame}
-        zoom={zoom}
-        viewportWidth={viewportDimensions.width}
-        viewportHeight={viewportDimensions.height}
-        scrollLeft={-pan.x}
-        scrollTop={-pan.y}
-        onViewportChange={handleViewportChange}
-      />
+      {/* UI Overlay - Fixed position widgets */}
+      <div className="canvas-ui-overlay">
+        {/* Zoom Controls */}
+        {onZoomIn && onZoomOut && onZoomReset && (
+          <CanvasZoomControls
+            zoom={zoom}
+            onZoomIn={onZoomIn}
+            onZoomOut={onZoomOut}
+            onZoomReset={onZoomReset}
+          />
+        )}
 
-      {/* Storage Indicator */}
-      <StorageIndicator
-        currentFrameSize={currentFrameSize}
-        totalSize={totalSize}
-        originalFileSize={originalFileSize}
-      />
+        {/* Minimap */}
+        <CanvasMinimap
+          frame={frame}
+          zoom={zoom}
+          viewportWidth={viewportDimensions.width}
+          viewportHeight={viewportDimensions.height}
+          scrollLeft={-pan.x}
+          scrollTop={-pan.y}
+          onViewportChange={handleViewportChange}
+        />
+
+        {/* Storage Indicator */}
+        <StorageIndicator
+          currentFrameSize={currentFrameSize}
+          totalSize={totalSize}
+          originalFileSize={originalFileSize}
+        />
+      </div>
     </div>
   );
 }
