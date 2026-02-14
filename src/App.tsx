@@ -415,7 +415,7 @@ function App() {
       : newMask;
 
     setSelectionMask(combinedMask);
-    setSelectionPoints(prev => [...prev, { x, y, tolerance: manualTolerance }]);
+    setSelectionPoints([...selectionPoints, { x, y, tolerance: manualTolerance }]);
   };
 
   // Helper to combine two masks (OR operation)

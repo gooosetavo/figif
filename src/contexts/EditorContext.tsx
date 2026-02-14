@@ -1,4 +1,5 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
 import { useEditorState } from '../hooks/useEditorState';
 import type { CropSelection } from '../components/Panels/CropPanel';
 
@@ -48,6 +49,7 @@ export const EditorProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useEditor = () => {
   const context = useContext(EditorContext);
   if (context === undefined) {

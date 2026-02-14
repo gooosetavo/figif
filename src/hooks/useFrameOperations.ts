@@ -1,5 +1,4 @@
 import { useWorkspace } from '../contexts/WorkspaceContext';
-import type { GifFrame } from '../types/gif.types';
 
 export const useFrameOperations = () => {
   const {

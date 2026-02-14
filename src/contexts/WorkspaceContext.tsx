@@ -1,5 +1,6 @@
-import { createContext, useContext, ReactNode } from 'react';
-import { useWorkspaceManager, type UseWorkspaceManagerReturn } from '../hooks/useWorkspaceManager';
+import { createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
+import { useWorkspaceManager } from '../hooks/useWorkspaceManager';
 import { useFrameManager } from '../hooks/useFrameManager';
 import type { GifFrame, DecodedGif } from '../types/gif.types';
 import type { WorkspaceMetadata, Workspace } from '../types/workspace.types';
@@ -74,6 +75,7 @@ export const WorkspaceProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useWorkspace = () => {
   const context = useContext(WorkspaceContext);
   if (context === undefined) {
