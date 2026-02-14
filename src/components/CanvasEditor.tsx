@@ -130,8 +130,8 @@ export function CanvasEditor({
   const handleViewportChange = (scrollLeft: number, scrollTop: number) => {
     // Update pan based on minimap interaction
     setPan({
-      x: -scrollLeft,
-      y: -scrollTop,
+      x: scrollLeft,
+      y: scrollTop,
     });
   };
 
@@ -262,8 +262,8 @@ export function CanvasEditor({
           zoom={zoom}
           viewportWidth={viewportDimensions.width}
           viewportHeight={viewportDimensions.height}
-          scrollLeft={-pan.x}
-          scrollTop={-pan.y}
+          scrollLeft={pan.x}
+          scrollTop={pan.y}
           onViewportChange={handleViewportChange}
         />
 
