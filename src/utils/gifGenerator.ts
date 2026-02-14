@@ -9,10 +9,51 @@ export async function generateGif(
     throw new Error('No frames to encode');
   }
 
+  // All frames should already be normalized to the same dimensions at the workspace level
+  // But calculate maximum bounds as a safety measure
+  const maxWidth = Math.max(...frames.map(f => f.imageData.width));
+  const maxHeight = Math.max(...frames.map(f => f.imageData.height));
+
   // Prepare frame data for modern-gif
   // Note: We pass fully composed frames (not patches) since we've already
   // handled disposal methods during decoding
   const frameData = frames.map((frame) => {
+    // If frame dimensions don't match max bounds (shouldn't happen after normalization),
+    // center it on a larger canvas as a fallback
+    if (frame.imageData.width !== maxWidth || frame.imageData.height !== maxHeight) {
+      console.warn('Frame size mismatch detected - normalizing at export time');
+      const canvas = document.createElement('canvas');
+      canvas.width = maxWidth;
+      canvas.height = maxHeight;
+      const ctx = canvas.getContext('2d');
+
+      if (ctx) {
+        // Center the frame
+        const offsetX = Math.floor((maxWidth - frame.imageData.width) / 2);
+        const offsetY = Math.floor((maxHeight - frame.imageData.height) / 2);
+
+        // Create a temporary canvas with the frame
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = frame.imageData.width;
+        tempCanvas.height = frame.imageData.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        if (tempCtx) {
+          tempCtx.putImageData(frame.imageData, 0, 0);
+          ctx.drawImage(tempCanvas, offsetX, offsetY);
+        }
+
+        // Get the centered image data
+        const centeredImageData = ctx.getImageData(0, 0, maxWidth, maxHeight);
+
+        return {
+          data: centeredImageData.data,
+          delay: frame.delay,
+          width: maxWidth,
+          height: maxHeight,
+        };
+      }
+    }
+
     return {
       data: frame.imageData.data,
       delay: frame.delay,
@@ -23,10 +64,10 @@ export async function generateGif(
     };
   });
 
-  // Configure encoding options with frame data
+  // Configure encoding options with frame dimensions
   const encodingOptions = {
-    width: frames[0].imageData.width,
-    height: frames[0].imageData.height,
+    width: maxWidth,
+    height: maxHeight,
     repeat: options.loopCount, // 0 for infinite
     transparent: options.transparent,
     quality: options.quality, // 1-10, higher is better but larger file

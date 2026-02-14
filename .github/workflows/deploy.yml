@@ -28,6 +28,8 @@ jobs:
           VITE_GITHUB_URL: ${{ github.server_url }}/${{ github.repository }}
           VITE_COMMIT_SHA: ${{ github.sha }}
           VITE_BUILD_DATE: ${{ github.event.head_commit.timestamp }}
+          VITE_BUYMEACOFFEE_USERNAME: gooosetavo
+          VITE_KOFI_USERNAME: gooosetavo
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist

@@ -1,6 +1,7 @@
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { addCustomPadding, rotate90, flipFrame } from '../utils/gifEffects';
 import { resizeFrames, cropFrames } from '../utils/imageTransform';
+import { normalizeFrameDimensions } from '../utils/frameNormalization';
 import type { CropSelection } from '../components/Panels/CropPanel';
 
 export const useTransformOperations = () => {
@@ -26,11 +27,14 @@ export const useTransformOperations = () => {
         const paddedFrame = addCustomPadding(frames[currentFrameIndex], left, right, top, bottom);
         const newFrames = [...frames];
         newFrames[currentFrameIndex] = paddedFrame;
-        setFrames(newFrames);
+
+        // Normalize all frames to have the same dimensions
+        const normalizedFrames = normalizeFrameDimensions(newFrames);
+        setFrames(normalizedFrames);
 
         if (activeWorkspace) {
           await saveSnapshot(
-            newFrames,
+            normalizedFrames,
             currentFrameIndex,
             `Applied padding to current frame (L:${left} R:${right} T:${top} B:${bottom})`,
             true
@@ -38,11 +42,14 @@ export const useTransformOperations = () => {
         }
       } else {
         const paddedFrames = frames.map((frame) => addCustomPadding(frame, left, right, top, bottom));
-        setFrames(paddedFrames);
+
+        // Normalize all frames to have the same dimensions
+        const normalizedFrames = normalizeFrameDimensions(paddedFrames);
+        setFrames(normalizedFrames);
 
         if (activeWorkspace) {
           await saveSnapshot(
-            paddedFrames,
+            normalizedFrames,
             currentFrameIndex,
             `Applied padding to all frames (L:${left} R:${right} T:${top} B:${bottom})`,
             true
@@ -70,7 +77,9 @@ export const useTransformOperations = () => {
         newFrames[index] = rotate90(frames[index], clockwise);
       }
 
-      setFrames(newFrames);
+      // Normalize all frames to have the same dimensions (rotation changes dimensions)
+      const normalizedFrames = normalizeFrameDimensions(newFrames);
+      setFrames(normalizedFrames);
 
       if (activeWorkspace) {
         const direction = clockwise ? 'clockwise' : 'counterclockwise';
@@ -82,7 +91,7 @@ export const useTransformOperations = () => {
             : 'current frame';
 
         await saveSnapshot(
-          newFrames,
+          normalizedFrames,
           currentFrameIndex,
           `Rotated 90° ${direction} (${scopeText})`,
           true
@@ -140,6 +149,22 @@ export const useTransformOperations = () => {
   ) => {
     if (frames.length === 0) return;
 
+    // Check if resize would cause data loss (making frames smaller)
+    const maxWidth = Math.max(...frames.map(f => f.imageData.width));
+    const maxHeight = Math.max(...frames.map(f => f.imageData.height));
+    const wouldLoseData = width < maxWidth || height < maxHeight;
+
+    if (wouldLoseData) {
+      const confirmed = window.confirm(
+        `Warning: Resizing to ${width}×${height} will crop your frames from ${maxWidth}×${maxHeight}, causing data loss.\n\n` +
+        `Click OK to proceed with cropping, or Cancel to keep the current dimensions.`
+      );
+
+      if (!confirmed) {
+        return; // User cancelled
+      }
+    }
+
     setIsResizing(true);
     try {
       const resizedFrames = resizeFrames(frames, width, height);
@@ -161,6 +186,25 @@ export const useTransformOperations = () => {
     setCropSelection: (selection: CropSelection | null) => void
   ) => {
     if (frames.length === 0) return;
+
+    // Check if crop would cause data loss
+    const maxWidth = Math.max(...frames.map(f => f.imageData.width));
+    const maxHeight = Math.max(...frames.map(f => f.imageData.height));
+    const wouldLoseData = selection.width < maxWidth || selection.height < maxHeight;
+
+    if (wouldLoseData) {
+      const currentSize = `${maxWidth}×${maxHeight}`;
+      const newSize = `${selection.width}×${selection.height}`;
+      const confirmed = window.confirm(
+        `Warning: Cropping to ${newSize} will remove parts of your frames (current size: ${currentSize}), causing data loss.\n\n` +
+        `Click OK to proceed with cropping, or Cancel to keep the current frame dimensions.`
+      );
+
+      if (!confirmed) {
+        setCropSelection(null);
+        return; // User cancelled
+      }
+    }
 
     setIsCropping(true);
     try {
@@ -204,12 +248,14 @@ export const useTransformOperations = () => {
         newFrames[i] = currentFrame;
       }
 
-      setFrames(newFrames);
+      // Normalize all frames to have the same dimensions (spin creates different rotations)
+      const normalizedFrames = normalizeFrameDimensions(newFrames);
+      setFrames(normalizedFrames);
 
       if (activeWorkspace) {
         const direction = clockwise ? 'clockwise' : 'counterclockwise';
         await saveSnapshot(
-          newFrames,
+          normalizedFrames,
           currentFrameIndex,
           `Applied spin effect (${direction})`,
           true

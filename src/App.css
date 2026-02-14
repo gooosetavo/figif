@@ -312,6 +312,38 @@
   margin-top: 8px !important;
 }
 
+.donation-links {
+  font-size: 13px;
+  margin-top: 8px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.donation-link {
+  display: inline-block;
+  line-height: 0;
+}
+
+.donation-icon {
+  height: 28px;
+  border-radius: 4px;
+  vertical-align: middle;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.donation-link:hover .donation-icon {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+.donation-separator {
+  display: inline-block;
+  width: 4px;
+}
+
 @media (max-width: 768px) {
   .app-header h1 {
     font-size: 24px;
