@@ -127,162 +127,41 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceManager.activeWorkspace?.id]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = async (e: KeyboardEvent) => {
-      const isMac = navigator.userAgent.indexOf('Mac') !== -1;
-      const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
-
-      // Undo: Ctrl/Cmd + Z
-      if (ctrlKey && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        if (workspaceManager.canUndo) {
-          const restoredFrames = await workspaceManager.undo();
-          if (restoredFrames) {
-            setFrames(restoredFrames);
-            if (workspaceManager.activeWorkspace) {
-              setCurrentFrameIndex(workspaceManager.activeWorkspace.currentFrameIndex);
-            }
-          }
-        }
+  // Wrapper functions for frame operations
+  const handleDeleteFrame = (scope: 'current' | 'selected' = 'current') => {
+    frameOps.handleDeleteFrame(scope, selectedFrames).then(() => {
+      if (scope === 'selected') {
+        setSelectedFrames(new Set());
       }
-
-      // Redo: Ctrl/Cmd + Shift + Z
-      if (ctrlKey && e.key === 'z' && e.shiftKey) {
-        e.preventDefault();
-        if (workspaceManager.canRedo) {
-          const restoredFrames = await workspaceManager.redo();
-          if (restoredFrames) {
-            setFrames(restoredFrames);
-            if (workspaceManager.activeWorkspace) {
-              setCurrentFrameIndex(workspaceManager.activeWorkspace.currentFrameIndex);
-            }
-          }
-        }
-      }
-
-      // Save: Ctrl/Cmd + S
-      if (ctrlKey && e.key === 's') {
-        e.preventDefault();
-        if (workspaceManager.activeWorkspace && frames.length > 0) {
-          await workspaceManager.saveSnapshot(
-            frames,
-            currentFrameIndex,
-            'Manual save',
-            false
-          );
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [workspaceManager, frames, currentFrameIndex, setFrames, setCurrentFrameIndex]);
-
-  const handleFileSelect = async (file: File) => {
-    try {
-      let decodedGif;
-
-      // Check if file is a GIF or needs conversion
-      if (isGifFile(file)) {
-        decodedGif = await decodeGif(file);
-      } else {
-        // Convert static image to GIF
-        decodedGif = await convertImageToGif(file);
-      }
-
-      // Create or load into workspace
-      if (!workspaceManager.activeWorkspace) {
-        const fileName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
-        await workspaceManager.createWorkspace(fileName, decodedGif);
-      } else {
-        loadGif(decodedGif);
-        const description = isGifFile(file) ? 'GIF loaded' : 'Image loaded';
-        await workspaceManager.saveSnapshot(decodedGif.frames, 0, description, true);
-      }
-    } catch (err) {
-      console.error('Failed to load image:', err);
-    }
+    });
   };
 
-  const handleExport = async () => {
-    if (frames.length === 0) return;
-
-    try {
-      await downloadGif(frames, 'edited.gif', {
-        quality: 10,
-        loopCount: 0,
-      });
-    } catch (err) {
-      console.error('Failed to export GIF:', err);
-    }
+  const handleDuplicateFrame = (scope: 'current' | 'selected' = 'current') => {
+    frameOps.handleDuplicateFrame(scope, selectedFrames);
   };
 
-  const handleExportWithOptions = async (options: ExportOptions) => {
-    if (frames.length === 0) return;
+  const handleReverseFrames = () => {
+    frameOps.handleReverseFrames();
+  };
 
-    try {
-      setExportProgress(0);
-      console.log('Exporting with format:', options.format, 'Options:', options);
+  const handleRemoveEveryOtherFrame = () => {
+    frameOps.handleRemoveEveryOtherFrame();
+  };
 
-      // Determine which frames to export
-      const framesToExport = options.useSelectedFrames && selectedFrames.size > 0
-        ? Array.from(selectedFrames).sort((a, b) => a - b).map(i => frames[i])
-        : frames;
+  const handleDuplicateAllFrames = () => {
+    frameOps.handleDuplicateAllFrames();
+  };
 
-      const filename = getExportFilename(options.format);
+  const handleKeepEveryNthFrame = (n: number) => {
+    frameOps.handleKeepEveryNthFrame(n);
+  };
 
-      switch (options.format) {
-        case 'gif':
-          await downloadGif(framesToExport, filename, {
-            quality: options.quality,
-            loopCount: options.loopCount,
-          });
-          setExportProgress(100);
-          break;
-
-        case 'png': {
-          // Export single frame (current or first selected)
-          const frameToExport = options.useSelectedFrames && selectedFrames.size > 0
-            ? frames[Array.from(selectedFrames)[0]]
-            : frames[currentFrameIndex];
-          await exportAsPNG(frameToExport, filename);
-          setExportProgress(100);
-          break;
-        }
-
-        case 'apng':
-          await exportAsAPNG(framesToExport, filename, options, setExportProgress);
-          break;
-
-        case 'webp':
-          await exportAsWebP(framesToExport, filename, options, setExportProgress);
-          break;
-
-        case 'webm':
-          await exportAsWebM(framesToExport, filename, options, setExportProgress);
-          break;
-
-        default:
-          console.error('Unsupported export format:', options.format);
-      }
-
-      // Close modal after successful export
-      setTimeout(() => {
-        setShowExportModal(false);
-        setExportProgress(0);
-      }, 1000);
-    } catch (err) {
-      console.error('Failed to export:', err);
-      alert(`Export failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
-      setExportProgress(0);
-    }
+  const handleReorderFrames = (fromIndex: number, toIndex: number) => {
+    frameOps.handleReorderFrames(fromIndex, toIndex, selectedFrames, setSelectedFrames);
   };
 
   const handleSpeedChange = (multiplier: number) => {
-    if (frames.length === 0) return;
-    const newDelay = Math.max(10, Math.round(frames[currentFrameIndex].delay / multiplier));
-    updateAllFrameDelays(newDelay);
+    frameOps.handleSpeedChange(multiplier);
   };
 
   const handleRemoveBackground = async (
