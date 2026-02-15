@@ -7,11 +7,13 @@
   gap: 4px;
   background: rgb(0 0 0 / 75%);
   backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 12px;
   color: rgb(255 255 255 / 90%);
   pointer-events: none;
+  user-select: none;
   user-select: none;
   z-index: 100;
   box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
