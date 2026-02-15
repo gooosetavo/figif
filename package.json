@@ -25,12 +25,14 @@
     "@types/react-dom": "^19.2.3",
     "@types/upng-js": "^2.1.5",
     "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.24",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "postcss": "^8.5.6",
     "stylelint": "^17.3.0",
     "stylelint-config-standard": "^40.0.0",
     "typescript": "~5.9.3",
@@ -44,5 +46,11 @@
     "*.css": [
       "stylelint --fix"
     ]
-  }
+  },
+  "browserslist": [
+    "> 0.5%",
+    "last 2 versions",
+    "not dead",
+    "Safari >= 13"
+  ]
 }
