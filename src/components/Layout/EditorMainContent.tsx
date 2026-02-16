@@ -11,6 +11,7 @@ interface EditorMainContentProps {
 export const EditorMainContent = ({ onCanvasClick }: EditorMainContentProps) => {
   const {
     zoom,
+    setZoom,
     handleZoomIn,
     handleZoomOut,
     handleZoomReset,
@@ -55,6 +56,7 @@ export const EditorMainContent = ({ onCanvasClick }: EditorMainContentProps) => 
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onZoomReset={handleZoomReset}
+        onZoomChange={setZoom}
         currentFrameSize={activeWorkspace?.currentFrameSize}
         totalSize={activeWorkspace?.totalSize}
         originalFileSize={activeWorkspace?.originalFileSize}

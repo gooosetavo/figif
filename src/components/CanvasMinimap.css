@@ -45,3 +45,120 @@
     margin-bottom: 4px;
   }
 }
+
+/* Wrapper for canvas + overlay */
+.canvas-minimap-wrapper {
+  position: relative;
+  display: inline-block;
+  line-height: 0; /* Remove extra space below canvas */
+  overflow: hidden; /* Clip indicator to minimap bounds */
+}
+
+/* Overlay positioned on top of canvas */
+.minimap-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Interactive viewport indicator box */
+.viewport-indicator-box {
+  position: absolute;
+  border: 2px solid #667eea;
+  background: rgb(102 126 234 / 20%);
+  cursor: move;
+  pointer-events: auto;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.viewport-indicator-box:hover {
+  border-color: #5568d3;
+  background: rgb(102 126 234 / 30%);
+}
+
+.viewport-indicator-box.resizing {
+  opacity: 0.8;
+  transition: none;
+}
+
+/* Resize handles */
+.minimap-handle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: white;
+  border: 1px solid #667eea;
+  border-radius: 1px;
+  pointer-events: auto;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.minimap-handle:hover {
+  background: #667eea;
+  border-color: #5568d3;
+  transform: scale(1.2);
+}
+
+/* Corner handle positioning */
+.minimap-handle-nw {
+  top: -4px;
+  left: -4px;
+  cursor: nw-resize;
+}
+
+.minimap-handle-ne {
+  top: -4px;
+  right: -4px;
+  cursor: ne-resize;
+}
+
+.minimap-handle-sw {
+  bottom: -4px;
+  left: -4px;
+  cursor: sw-resize;
+}
+
+.minimap-handle-se {
+  bottom: -4px;
+  right: -4px;
+  cursor: se-resize;
+}
+
+/* Prevent text selection during resize */
+.viewport-indicator-box.resizing,
+.viewport-indicator-box.resizing * {
+  user-select: none;
+  user-select: none;
+}
+
+/* Mobile: Larger touch targets */
+@media (width <= 768px) {
+  .minimap-handle {
+    width: 12px;
+    height: 12px;
+  }
+
+  .minimap-handle-nw,
+  .minimap-handle-ne {
+    top: -6px;
+  }
+
+  .minimap-handle-sw,
+  .minimap-handle-se {
+    bottom: -6px;
+  }
+
+  .minimap-handle-nw,
+  .minimap-handle-sw {
+    left: -6px;
+  }
+
+  .minimap-handle-ne,
+  .minimap-handle-se {
+    right: -6px;
+  }
+}

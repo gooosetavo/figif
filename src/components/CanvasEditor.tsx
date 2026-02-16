@@ -18,6 +18,7 @@ interface CanvasEditorProps {
   onZoomIn?: () => void;
   onZoomOut?: () => void;
   onZoomReset?: () => void;
+  onZoomChange?: (zoom: number) => void;
   currentFrameSize?: number;
   totalSize?: number;
   originalFileSize?: number;
@@ -34,6 +35,7 @@ export function CanvasEditor({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  onZoomChange,
   currentFrameSize,
   totalSize,
   originalFileSize,
@@ -265,6 +267,7 @@ export function CanvasEditor({
           scrollLeft={pan.x}
           scrollTop={pan.y}
           onViewportChange={handleViewportChange}
+          onZoomChange={onZoomChange}
         />
 
         {/* Storage Indicator */}
