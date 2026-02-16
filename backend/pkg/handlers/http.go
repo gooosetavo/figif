@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	pb "github.com/figif/backend/proto"
 	"github.com/figif/backend/pkg/processor"
 )
 
