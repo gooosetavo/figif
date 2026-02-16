@@ -51,7 +51,7 @@ export function useBackgroundRemoval(): UseBackgroundRemovalReturn {
           // Upload frame if not already uploaded
           if (!uploadedFramesRef.current.has(frameIndex)) {
             console.log(`⬆️ Uploading frame ${frameIndex} to backend`);
-            await sessionClient.uploadFrames([frame]);
+            await sessionClient.uploadFrames([frame], undefined, frameIndex);
             uploadedFramesRef.current.add(frameIndex);
           }
 
@@ -132,7 +132,7 @@ export function useBackgroundRemoval(): UseBackgroundRemovalReturn {
           const previewFrameIndex = 9999;
 
           // Upload preview frame
-          await sessionClient.uploadFrames([frame]);
+          await sessionClient.uploadFrames([frame], undefined, previewFrameIndex);
 
           // Process on backend
           await sessionClient.removeBackgroundFromFrame(previewFrameIndex, 'ai');

@@ -320,3 +320,58 @@ func (h *SessionHandler) GetQuotaInfoHandler(w http.ResponseWriter, r *http.Requ
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(quotaInfo)
 }
+
+// RefreshTokenHandler handles POST /api/session/refresh
+// Extends the session lifetime and returns a new JWT token
+func (h *SessionHandler) RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Get session ID and claims from auth middleware
+	sessionID, err := GetSessionID(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	claims, err := GetSessionClaims(r)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// Get session metadata to verify it exists
+	metadata, err := h.sessionManager.GetSession(sessionID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Session not found: %v", err), http.StatusNotFound)
+		return
+	}
+
+	// Extend session expiration by 24 hours from now
+	newExpiresAt := time.Now().Add(session.DefaultSessionTTL)
+	metadata.ExpiresAt = newExpiresAt
+	metadata.LastAccess = time.Now()
+
+	// Generate new token with extended expiration
+	newToken, err := h.sessionManager.GenerateToken(
+		sessionID,
+		metadata.FrameCount,
+		claims.WorkspaceID,
+		session.DefaultSessionTTL,
+	)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to generate new token: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	response := session.CreateSessionResponse{
+		SessionToken: newToken,
+		SessionID:    sessionID,
+		ExpiresAt:    newExpiresAt.Unix(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}

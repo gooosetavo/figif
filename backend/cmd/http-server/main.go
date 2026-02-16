@@ -77,6 +77,7 @@ func main() {
 	authMiddleware := handlers.AuthMiddleware(sessionManager)
 	mux.Handle("/api/session/upload", handlers.CORSMiddleware(authMiddleware(http.HandlerFunc(sessionHandler.UploadFramesHandler)).ServeHTTP))
 	mux.Handle("/api/session/info", handlers.CORSMiddleware(authMiddleware(http.HandlerFunc(sessionHandler.GetSessionInfoHandler)).ServeHTTP))
+	mux.Handle("/api/session/refresh", handlers.CORSMiddleware(authMiddleware(http.HandlerFunc(sessionHandler.RefreshTokenHandler)).ServeHTTP))
 	mux.Handle("/api/session/end", handlers.CORSMiddleware(authMiddleware(http.HandlerFunc(sessionHandler.EndSessionHandler)).ServeHTTP))
 	mux.Handle("/api/session/quota", handlers.CORSMiddleware(authMiddleware(http.HandlerFunc(sessionHandler.GetQuotaInfoHandler)).ServeHTTP))
 
@@ -113,6 +114,7 @@ func main() {
 	log.Printf("     POST /api/session/create")
 	log.Printf("     POST /api/session/upload (requires auth)")
 	log.Printf("     GET  /api/session/info (requires auth)")
+	log.Printf("     POST /api/session/refresh (requires auth)")
 	log.Printf("     GET  /api/session/quota (requires auth)")
 	log.Printf("     POST /api/session/frame/:id/remove-bg (requires auth)")
 	log.Printf("     POST /api/session/frame/:id/manual-remove (requires auth)")

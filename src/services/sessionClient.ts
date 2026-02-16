@@ -18,6 +18,8 @@ export class SessionClient {
   private sessionId: string | null = null;
   private baseUrl: string;
   private timeout: number;
+  private refreshIntervalId: number | null = null;
+  private readonly REFRESH_INTERVAL = 60000; // 1 minute
 
   constructor(baseUrl: string = 'http://localhost:8080', timeout: number = 300000) {
     this.baseUrl = baseUrl;
@@ -53,6 +55,9 @@ export class SessionClient {
         this.sessionToken = token;
         this.sessionId = id;
         console.log('🔄 Restored backend session:', id);
+
+        // Start token refresh for restored session
+        this.startTokenRefresh();
       }
     } catch (error) {
       console.warn('Failed to restore session from storage:', error);
@@ -175,6 +180,9 @@ export class SessionClient {
 
       console.log('✅ Session created:', sessionInfo.sessionId);
 
+      // Start token refresh to keep session alive
+      this.startTokenRefresh();
+
       return sessionInfo;
     } catch (error) {
       if (error instanceof Error) {
@@ -189,16 +197,20 @@ export class SessionClient {
 
   /**
    * Upload frames to the backend in batches
+   * @param frames - Array of frames to upload
+   * @param progressCallback - Optional callback for upload progress
+   * @param startIndex - Starting index for the frames (defaults to 0)
    */
   async uploadFrames(
     frames: GifFrame[],
-    progressCallback?: (uploaded: number, total: number) => void
+    progressCallback?: (uploaded: number, total: number) => void,
+    startIndex: number = 0
   ): Promise<void> {
     if (!this.hasActiveSession()) {
       throw new Error('No active session. Call createSession() first.');
     }
 
-    console.log(`⬆️ Uploading ${frames.length} frames in batches of ${BATCH_SIZE}...`);
+    console.log(`⬆️ Uploading ${frames.length} frames starting at index ${startIndex} in batches of ${BATCH_SIZE}...`);
 
     const batches: GifFrame[][] = [];
     for (let i = 0; i < frames.length; i += BATCH_SIZE) {
@@ -213,7 +225,7 @@ export class SessionClient {
       // Convert frames to upload format
       const uploadData: UploadFrameData[] = await Promise.all(
         batch.map(async (frame, idx) => ({
-          index: batchIndex * BATCH_SIZE + idx,
+          index: startIndex + batchIndex * BATCH_SIZE + idx,
           imageData: await this.imageDataToBase64(frame.imageData),
           delay: frame.delay,
         }))
@@ -420,6 +432,78 @@ export class SessionClient {
   }
 
   /**
+   * Refresh the session token to extend its lifetime
+   */
+  async refreshToken(): Promise<void> {
+    if (!this.hasActiveSession()) {
+      console.warn('⚠️ Cannot refresh token - no active session');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}/api/session/refresh`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.sessionToken}`,
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to refresh token:', response.statusText);
+        // If refresh fails, stop trying and clear the session
+        this.stopTokenRefresh();
+        return;
+      }
+
+      const sessionInfo: SessionInfo = await response.json();
+
+      // Update with new token
+      this.sessionToken = sessionInfo.sessionToken;
+      this.saveSession();
+
+      console.log('🔄 Token refreshed, session extended to', new Date(sessionInfo.expiresAt * 1000).toLocaleString());
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      // Don't clear session on network error - might be temporary
+    }
+  }
+
+  /**
+   * Start periodic token refresh to keep session alive
+   */
+  startTokenRefresh(): void {
+    // Stop any existing refresh interval
+    this.stopTokenRefresh();
+
+    if (!this.hasActiveSession()) {
+      console.warn('⚠️ Cannot start token refresh - no active session');
+      return;
+    }
+
+    console.log(`⏱️ Starting token refresh every ${this.REFRESH_INTERVAL / 1000} seconds`);
+
+    // Refresh immediately on start
+    this.refreshToken();
+
+    // Then refresh periodically
+    this.refreshIntervalId = window.setInterval(() => {
+      this.refreshToken();
+    }, this.REFRESH_INTERVAL);
+  }
+
+  /**
+   * Stop periodic token refresh
+   */
+  stopTokenRefresh(): void {
+    if (this.refreshIntervalId !== null) {
+      console.log('⏹️ Stopping token refresh');
+      clearInterval(this.refreshIntervalId);
+      this.refreshIntervalId = null;
+    }
+  }
+
+  /**
    * End the current session and cleanup
    */
   async endSession(): Promise<void> {
@@ -427,6 +511,9 @@ export class SessionClient {
       console.log('ℹ️ No active session to end');
       return;
     }
+
+    // Stop token refresh
+    this.stopTokenRefresh();
 
     console.log('🔚 Ending backend session:', this.sessionId);
 

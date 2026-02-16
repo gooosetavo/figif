@@ -4,32 +4,30 @@ import { sessionClient } from '../services/sessionClient';
 
 /**
  * Custom hook to manage backend session lifecycle
- * - Ends session when switching to browser mode
- * - Ends session when component unmounts
+ * - Starts token refresh when session is active
+ * - Keeps session alive across mode switches (persists for 24 hours)
+ * - Session only expires after 24 hours of inactivity
  */
 export const useSessionManager = () => {
   const { processingMode } = useEditor();
 
-  // End session when switching to browser mode
+  // Start/stop token refresh based on session state
   useEffect(() => {
-    if (processingMode === 'browser' && sessionClient.hasActiveSession()) {
-      console.log('🔄 Switching to browser mode - ending backend session');
-      sessionClient.endSession();
+    if (sessionClient.hasActiveSession()) {
+      console.log('🔄 Starting session token refresh (keeps session alive)');
+      sessionClient.startTokenRefresh();
     }
-  }, [processingMode]);
 
-  // End session on unmount
-  useEffect(() => {
     return () => {
-      if (sessionClient.hasActiveSession()) {
-        console.log('🧹 Component unmounting - ending backend session');
-        sessionClient.endSession();
-      }
+      // Stop token refresh on unmount, but don't end the session
+      // Session will naturally expire after 24 hours of inactivity
+      sessionClient.stopTokenRefresh();
     };
-  }, []);
+  }, [processingMode]);
 
   return {
     hasActiveSession: sessionClient.hasActiveSession.bind(sessionClient),
     getSessionId: sessionClient.getSessionId.bind(sessionClient),
+    endSession: sessionClient.endSession.bind(sessionClient),
   };
 };
