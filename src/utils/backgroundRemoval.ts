@@ -12,12 +12,23 @@ export async function removeBackgroundAI(
   config?: AIBackgroundRemovalConfig,
   processingMode: ProcessingMode = 'browser'
 ): Promise<ImageData> {
+  console.log(`🔍 removeBackgroundAI called with mode: ${processingMode}`);
+
   // Use backend if specified
   if (processingMode === 'backend') {
-    return await backendClient.removeBackground(imageData, 'png');
+    console.log('✅ Using backend server for AI background removal');
+    try {
+      const result = await backendClient.removeBackground(imageData, 'png');
+      console.log('✅ Backend processing completed successfully');
+      return result;
+    } catch (error) {
+      console.error('❌ Backend processing failed:', error);
+      throw error;
+    }
   }
 
   // In-browser processing
+  console.log('🌐 Using in-browser AI background removal');
   // Create a temporary canvas with the image data
   const canvas = document.createElement('canvas');
   canvas.width = imageData.width;
