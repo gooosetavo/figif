@@ -45,7 +45,7 @@ export function BackgroundRemovalPanel({
   aiProgress,
   currentFrame,
 }: BackgroundRemovalPanelProps) {
-  const { processingMode, setProcessingMode, isBackendAvailable, setIsBackendAvailable } = useEditor();
+  const { processingMode, isBackendAvailable, setIsBackendAvailable } = useEditor();
   const [mode, setMode] = useState<RemovalMode>('ai');
   const [invertSelection, setInvertSelection] = useState(false);
   const [useReapplyMode, setUseReapplyMode] = useState(true);
@@ -94,51 +94,25 @@ export function BackgroundRemovalPanel({
         </button>
       </div>
 
-      {/* Processing Mode Toggle */}
-      {mode === 'ai' && (
-        <div className="processing-mode-selector" style={{ marginTop: '12px', marginBottom: '12px' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              className={`mode-button ${processingMode === 'browser' ? 'active' : ''}`}
-              onClick={() => setProcessingMode('browser')}
-              disabled={isProcessing}
-              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
-            >
-              🌐 In-Browser
-            </button>
-            <button
-              className={`mode-button ${processingMode === 'backend' ? 'active' : ''}`}
-              onClick={() => setProcessingMode('backend')}
-              disabled={isProcessing || !isBackendAvailable}
-              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
-              title={!isBackendAvailable ? 'Backend server not available' : 'Process on backend server'}
-            >
-              ⚡ Backend {!isBackendAvailable && '(offline)'}
-            </button>
-          </div>
-          {processingMode === 'backend' && isBackendAvailable && (
-            <p style={{ fontSize: '11px', color: '#667eea', marginTop: '6px', marginBottom: '0' }}>
-              ✓ Processing will be offloaded to the backend server
-            </p>
-          )}
-          {processingMode === 'backend' && !isBackendAvailable && (
-            <p style={{ fontSize: '11px', color: '#e53e3e', marginTop: '6px', marginBottom: '0' }}>
-              ⚠️ Backend server is not available. Start the server to use this mode.
-            </p>
-          )}
-        </div>
-      )}
-
       {mode === 'ai' ? (
         <div className="ai-mode">
           <p className="mode-description">
-            {processingMode === 'browser'
-              ? 'Uses an in-browser model to automatically detect and remove backgrounds. Works best with photos and clear subjects.'
-              : 'Uses the backend server for faster processing. The heavy computation is offloaded from your browser.'}
+            Uses AI to automatically detect and remove backgrounds. Works best with photos and clear subjects.
+            {processingMode === 'backend' && isBackendAvailable && (
+              <span style={{ display: 'block', marginTop: '8px', fontSize: '12px', color: '#667eea' }}>
+                ⚡ Using backend server for processing
+              </span>
+            )}
+            {processingMode === 'backend' && !isBackendAvailable && (
+              <span style={{ display: 'block', marginTop: '8px', fontSize: '12px', color: '#e53e3e' }}>
+                ⚠️ Backend mode enabled but server offline - using browser mode
+              </span>
+            )}
           </p>
 
-          {/* AI Model Configuration */}
-          <div className="ai-config-section">
+          {/* AI Model Configuration - Only for browser mode */}
+          {processingMode === 'browser' && (
+            <div className="ai-config-section">
             <div className="control-item">
               <div className="control-header">
                 <label htmlFor="model-quality-select">Model Quality</label>
@@ -199,6 +173,7 @@ export function BackgroundRemovalPanel({
               </select>
             </div>
           </div>
+          )}
 
           {/* Preview Button */}
           <div className="button-group-vertical">
