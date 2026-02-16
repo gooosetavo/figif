@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 import type { ReactNode } from 'react';
 import { useEditorState } from '../hooks/useEditorState';
 import type { CropSelection } from '../components/Panels/CropPanel';
+import type { ProcessingMode } from '../services/grpcClient';
 
 interface EditorContextType {
   zoom: number;
@@ -32,6 +33,10 @@ interface EditorContextType {
   setSelectedFrames: (frames: Set<number>) => void;
   showPreviewModal: boolean;
   setShowPreviewModal: (show: boolean) => void;
+  processingMode: ProcessingMode;
+  setProcessingMode: (mode: ProcessingMode) => void;
+  isBackendAvailable: boolean;
+  setIsBackendAvailable: (available: boolean) => void;
   handleZoomIn: () => void;
   handleZoomOut: () => void;
   handleZoomReset: () => void;

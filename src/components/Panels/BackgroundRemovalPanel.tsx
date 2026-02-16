@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { RemovalMode } from '../../hooks/useBackgroundRemoval';
 import type { AIBackgroundRemovalConfig, AIModel, AIDevice, GifFrame } from '../../types/gif.types';
 import { getModelInfo } from '../../utils/backgroundRemoval';
+import { useEditor } from '../../contexts/EditorContext';
+import { backendClient } from '../../services/grpcClient';
 import './BackgroundRemovalPanel.css';
 
 export type GifEffect = 'none' | 'intensifies' | 'party' | 'on-drugs';
@@ -43,6 +45,7 @@ export function BackgroundRemovalPanel({
   aiProgress,
   currentFrame,
 }: BackgroundRemovalPanelProps) {
+  const { processingMode, setProcessingMode, isBackendAvailable, setIsBackendAvailable } = useEditor();
   const [mode, setMode] = useState<RemovalMode>('ai');
   const [invertSelection, setInvertSelection] = useState(false);
   const [useReapplyMode, setUseReapplyMode] = useState(true);
@@ -54,6 +57,15 @@ export function BackgroundRemovalPanel({
   const [showModelInfo, setShowModelInfo] = useState(false);
 
   const modelInfo = getModelInfo(selectedModel);
+
+  // Check backend availability on mount
+  useEffect(() => {
+    const checkBackend = async () => {
+      const available = await backendClient.isAvailable();
+      setIsBackendAvailable(available);
+    };
+    checkBackend();
+  }, [setIsBackendAvailable]);
 
   const aiConfig: AIBackgroundRemovalConfig = {
     model: selectedModel,
@@ -82,10 +94,47 @@ export function BackgroundRemovalPanel({
         </button>
       </div>
 
+      {/* Processing Mode Toggle */}
+      {mode === 'ai' && (
+        <div className="processing-mode-selector" style={{ marginTop: '12px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <button
+              className={`mode-button ${processingMode === 'browser' ? 'active' : ''}`}
+              onClick={() => setProcessingMode('browser')}
+              disabled={isProcessing}
+              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
+            >
+              🌐 In-Browser
+            </button>
+            <button
+              className={`mode-button ${processingMode === 'backend' ? 'active' : ''}`}
+              onClick={() => setProcessingMode('backend')}
+              disabled={isProcessing || !isBackendAvailable}
+              style={{ flex: 1, fontSize: '13px', padding: '8px' }}
+              title={!isBackendAvailable ? 'Backend server not available' : 'Process on backend server'}
+            >
+              ⚡ Backend {!isBackendAvailable && '(offline)'}
+            </button>
+          </div>
+          {processingMode === 'backend' && isBackendAvailable && (
+            <p style={{ fontSize: '11px', color: '#667eea', marginTop: '6px', marginBottom: '0' }}>
+              ✓ Processing will be offloaded to the backend server
+            </p>
+          )}
+          {processingMode === 'backend' && !isBackendAvailable && (
+            <p style={{ fontSize: '11px', color: '#e53e3e', marginTop: '6px', marginBottom: '0' }}>
+              ⚠️ Backend server is not available. Start the server to use this mode.
+            </p>
+          )}
+        </div>
+      )}
+
       {mode === 'ai' ? (
         <div className="ai-mode">
           <p className="mode-description">
-            Uses an in-browser model to automatically detect and remove backgrounds. Works best with photos and clear subjects.
+            {processingMode === 'browser'
+              ? 'Uses an in-browser model to automatically detect and remove backgrounds. Works best with photos and clear subjects.'
+              : 'Uses the backend server for faster processing. The heavy computation is offloaded from your browser.'}
           </p>
 
           {/* AI Model Configuration */}

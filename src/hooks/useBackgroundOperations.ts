@@ -25,6 +25,7 @@ export const useBackgroundOperations = () => {
     manualTolerance,
     setIsManualSelectionMode,
     setShowPreviewModal,
+    processingMode,
   } = useEditor();
 
   const {
@@ -44,22 +45,22 @@ export const useBackgroundOperations = () => {
 
     try {
       if (target === 'current') {
-        const processedFrame = await removeBackgroundFromFrame(frames[currentFrameIndex], mode, config);
+        const processedFrame = await removeBackgroundFromFrame(frames[currentFrameIndex], mode, config, processingMode);
         const newFrames = [...frames];
         newFrames[currentFrameIndex] = processedFrame;
         setFrames(newFrames);
 
         if (activeWorkspace) {
-          await saveSnapshot(newFrames, currentFrameIndex, `Background removed (${mode})`, true);
+          await saveSnapshot(newFrames, currentFrameIndex, `Background removed (${mode}, ${processingMode})`, true);
         }
       } else {
-        const processedFrames = await removeBackgroundFromFrames(frames, mode, config, (progress) => {
+        const processedFrames = await removeBackgroundFromFrames(frames, mode, config, processingMode, (progress) => {
           console.log(`Processing: ${progress}%`);
         });
         setFrames(processedFrames);
 
         if (activeWorkspace) {
-          await saveSnapshot(processedFrames, currentFrameIndex, `Background removed from all frames (${mode})`, true);
+          await saveSnapshot(processedFrames, currentFrameIndex, `Background removed from all frames (${mode}, ${processingMode})`, true);
         }
       }
       setSelectionMask(null);

@@ -1,14 +1,23 @@
 import { removeBackground } from '@imgly/background-removal';
 import type { AIBackgroundRemovalConfig, ModelInfo, AIModel } from '../types/gif.types';
+import { backendClient, type ProcessingMode } from '../services/grpcClient';
 
 /**
  * AI-powered background removal using ML model
+ * Supports both in-browser and backend processing modes
  * Processes a single frame and returns the result with transparent background
  */
 export async function removeBackgroundAI(
   imageData: ImageData,
-  config?: AIBackgroundRemovalConfig
+  config?: AIBackgroundRemovalConfig,
+  processingMode: ProcessingMode = 'browser'
 ): Promise<ImageData> {
+  // Use backend if specified
+  if (processingMode === 'backend') {
+    return await backendClient.removeBackground(imageData, 'png');
+  }
+
+  // In-browser processing
   // Create a temporary canvas with the image data
   const canvas = document.createElement('canvas');
   canvas.width = imageData.width;
