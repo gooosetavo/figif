@@ -1,6 +1,8 @@
 # FigIF Backend
 
-Go backend server using gRPC for offloading heavy image processing tasks from the browser.
+Go backend server for offloading heavy image processing tasks from the browser.
+
+Provides both gRPC and HTTP/REST APIs for flexibility.
 
 ## Features
 
@@ -8,6 +10,8 @@ Go backend server using gRPC for offloading heavy image processing tasks from th
 - **GIF Optimization**: Optimize and resize GIF files
 - **Image Resizing**: Resize images with aspect ratio control
 - **Batch Frame Processing**: Process multiple frames using streaming gRPC
+- **HTTP API**: RESTful endpoints for easy frontend integration
+- **gRPC API**: High-performance RPC for advanced use cases
 
 ## Prerequisites
 

@@ -73,7 +73,7 @@ export const useBackgroundOperations = () => {
     if (!frames[currentFrameIndex]) return;
 
     try {
-      const preview = await previewBackgroundRemoval(frames[currentFrameIndex], config);
+      const preview = await previewBackgroundRemoval(frames[currentFrameIndex], config, processingMode);
 
       const canvas = document.createElement('canvas');
       canvas.width = preview.width;
