@@ -20,6 +20,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", handlers.CORSMiddleware(handler.HealthHandler))
 	mux.HandleFunc("/api/remove-background", handlers.CORSMiddleware(handler.RemoveBackgroundHandler))
+	mux.HandleFunc("/api/manual-remove-background", handlers.CORSMiddleware(handler.ManualRemoveBackgroundHandler))
 
 	log.Printf("HTTP server listening on port %s", *port)
 	log.Printf("Health check: http://localhost:%s/health", *port)

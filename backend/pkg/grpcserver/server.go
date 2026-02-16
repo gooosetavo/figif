@@ -137,3 +137,45 @@ func (s *ImageProcessingServer) ProcessFrames(stream pb.ImageProcessingService_P
 		frameCount++
 	}
 }
+
+// ManualRemoveBackground removes background using manual selections
+func (s *ImageProcessingServer) ManualRemoveBackground(ctx context.Context, req *pb.ManualRemoveBackgroundRequest) (*pb.ManualRemoveBackgroundResponse, error) {
+	start := time.Now()
+	log.Printf("ManualRemoveBackground request received, image size: %d bytes, selections: %d", len(req.ImageData), len(req.Selections))
+
+	// Convert proto selections to processor selections
+	selections := make([]processor.SelectionPoint, len(req.Selections))
+	for i, sel := range req.Selections {
+		selections[i] = processor.SelectionPoint{
+			X:         int(sel.X),
+			Y:         int(sel.Y),
+			Tolerance: int(sel.Tolerance),
+		}
+	}
+
+	processedImage, err := s.processor.ManualRemoveBackground(
+		ctx,
+		req.ImageData,
+		int(req.Width),
+		int(req.Height),
+		selections,
+		req.Invert,
+		req.Effect,
+	)
+
+	processingTime := time.Since(start).Milliseconds()
+
+	if err != nil {
+		log.Printf("Error in manual background removal: %v", err)
+		return &pb.ManualRemoveBackgroundResponse{
+			Error:            err.Error(),
+			ProcessingTimeMs: processingTime,
+		}, nil
+	}
+
+	log.Printf("Manual background removal completed in %dms", processingTime)
+	return &pb.ManualRemoveBackgroundResponse{
+		ProcessedImage:   processedImage,
+		ProcessingTimeMs: processingTime,
+	}, nil
+}

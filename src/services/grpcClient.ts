@@ -31,6 +31,27 @@ export interface OptimizeGIFResponse {
   processingTimeMs: number;
 }
 
+export interface SelectionPoint {
+  x: number;
+  y: number;
+  tolerance: number;
+}
+
+export interface ManualRemoveBackgroundRequest {
+  imageData: string; // base64 encoded
+  width: number;
+  height: number;
+  selections: SelectionPoint[];
+  invert: boolean;
+  effect: string;
+}
+
+export interface ManualRemoveBackgroundResponse {
+  processedImage: string; // base64 encoded
+  error?: string;
+  processingTimeMs: number;
+}
+
 class BackendClient {
   private baseUrl: string;
   private timeout: number;
@@ -130,6 +151,58 @@ class BackendClient {
       }
 
       console.log(`Backend processing took ${result.processingTimeMs}ms`);
+
+      return await this.base64ToImageData(result.processedImage, imageData.width, imageData.height);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.name === 'TimeoutError') {
+          throw new Error('Backend request timed out. The server may be overloaded or offline.');
+        }
+        throw error;
+      }
+      throw new Error('Failed to communicate with backend');
+    }
+  }
+
+  /**
+   * Manual background removal using selections
+   */
+  async manualRemoveBackground(
+    imageData: ImageData,
+    selections: SelectionPoint[],
+    invert: boolean,
+    effect: string
+  ): Promise<ImageData> {
+    try {
+      const base64Image = await this.imageDataToBase64(imageData);
+
+      const response = await fetch(`${this.baseUrl}/api/manual-remove-background`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageData: base64Image,
+          width: imageData.width,
+          height: imageData.height,
+          selections,
+          invert,
+          effect,
+        }),
+        signal: AbortSignal.timeout(this.timeout),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend request failed: ${response.statusText}`);
+      }
+
+      const result: ManualRemoveBackgroundResponse = await response.json();
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      console.log(`Backend manual processing took ${result.processingTimeMs}ms`);
 
       return await this.base64ToImageData(result.processedImage, imageData.width, imageData.height);
     } catch (error) {

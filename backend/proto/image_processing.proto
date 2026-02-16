@@ -17,6 +17,9 @@ service ImageProcessingService {
 
   // ProcessFrames processes multiple frames in a batch
   rpc ProcessFrames(stream ProcessFrameRequest) returns (stream ProcessFrameResponse);
+
+  // ManualRemoveBackground removes background using manual selections
+  rpc ManualRemoveBackground(ManualRemoveBackgroundRequest) returns (ManualRemoveBackgroundResponse);
 }
 
 message RemoveBackgroundRequest {
@@ -70,4 +73,26 @@ message ProcessFrameResponse {
   int32 frame_index = 2;
   string error = 3;
   int64 processing_time_ms = 4;
+}
+
+// Selection point for magic wand
+message SelectionPoint {
+  int32 x = 1;
+  int32 y = 2;
+  int32 tolerance = 3;
+}
+
+message ManualRemoveBackgroundRequest {
+  bytes image_data = 1;
+  int32 width = 2;
+  int32 height = 3;
+  repeated SelectionPoint selections = 4;
+  bool invert = 5;
+  string effect = 6; // "none", "intensifies", "party", "on-drugs"
+}
+
+message ManualRemoveBackgroundResponse {
+  bytes processed_image = 1;
+  string error = 2;
+  int64 processing_time_ms = 3;
 }
