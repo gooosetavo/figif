@@ -19,6 +19,7 @@ export const useEditorState = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [processingMode, setProcessingMode] = useState<ProcessingMode>('browser');
   const [isBackendAvailable, setIsBackendAvailable] = useState(false);
+  const [sessionActive, setSessionActive] = useState(false);
 
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3));
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.25));
@@ -57,6 +58,8 @@ export const useEditorState = () => {
     setProcessingMode,
     isBackendAvailable,
     setIsBackendAvailable,
+    sessionActive,
+    setSessionActive,
     handleZoomIn,
     handleZoomOut,
     handleZoomReset,

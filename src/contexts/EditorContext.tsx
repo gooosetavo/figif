@@ -37,6 +37,8 @@ interface EditorContextType {
   setProcessingMode: (mode: ProcessingMode) => void;
   isBackendAvailable: boolean;
   setIsBackendAvailable: (available: boolean) => void;
+  sessionActive: boolean;
+  setSessionActive: (active: boolean) => void;
   handleZoomIn: () => void;
   handleZoomOut: () => void;
   handleZoomReset: () => void;
