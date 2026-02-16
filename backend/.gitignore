@@ -1,5 +1,6 @@
 # Binaries
 bin/
+tmp/
 *.exe
 *.dll
 *.so
@@ -30,3 +31,6 @@ vendor/
 # OS
 .DS_Store
 Thumbs.db
+
+# Air live reload
+build-errors.log

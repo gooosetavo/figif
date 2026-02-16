@@ -13,7 +13,21 @@ Provides both gRPC and HTTP/REST APIs for flexibility.
 - **HTTP API**: RESTful endpoints for easy frontend integration
 - **gRPC API**: High-performance RPC for advanced use cases
 
-## Prerequisites
+## Quick Start with Docker (Recommended)
+
+**Development with live reload:**
+```bash
+cd ..  # Go to project root
+docker compose --profile dev up
+```
+
+See [DOCKER.md](DOCKER.md) for complete Docker documentation.
+
+---
+
+## Manual Setup (without Docker)
+
+### Prerequisites
 
 - Go 1.21 or later
 - Protocol Buffers compiler (protoc)
@@ -47,20 +61,39 @@ make proto
 
 ## Running the Server
 
-**Default port (50051):**
+### For Frontend Development (HTTP Server)
+
+The HTTP server is designed for the frontend to communicate with:
+
+```bash
+make run-http
+```
+
+This starts an HTTP server on port 8080 with CORS enabled.
+
+**Or with custom port:**
+```bash
+make run-http-port PORT=3001
+```
+
+### For gRPC Clients (gRPC Server)
+
 ```bash
 make run
 ```
 
-**Custom port:**
+This starts a gRPC server on port 50051.
+
+### Run Both Servers
+
+For full functionality:
 ```bash
-make run-port PORT=8080
+make run-both
 ```
 
-**Or directly with go run:**
-```bash
-go run server/main.go -port=50051
-```
+This starts:
+- gRPC server on port 50051
+- HTTP server on port 8080
 
 ## Building
 
@@ -77,8 +110,12 @@ This creates `bin/server` executable.
 backend/
 ├── proto/                      # Protocol Buffer definitions
 │   └── image_processing.proto  # gRPC service definitions
-├── server/                     # Server implementation
-│   └── main.go                 # Main server entry point
+├── server/                     # Server implementations
+│   ├── main.go                 # gRPC server entry point
+│   └── http_handler.go         # HTTP/REST handlers
+├── cmd/                        # Command-line applications
+│   └── http-server/            # HTTP server
+│       └── main.go
 ├── pkg/                        # Packages
 │   └── processor/              # Image processing logic
 │       └── processor.go
@@ -159,16 +196,46 @@ make clean
 
 ## Frontend Integration
 
-To use this backend from your frontend:
+The frontend is already configured to communicate with the HTTP server.
 
-1. Install gRPC-web or use a gRPC proxy
-2. Generate TypeScript clients from the proto file
-3. Configure the frontend to connect to `localhost:50051`
+### HTTP API Endpoints
 
-Example with grpc-web:
-```bash
-npm install grpc-web google-protobuf
+**Health Check:**
 ```
+GET http://localhost:8080/health
+```
+
+**Remove Background:**
+```
+POST http://localhost:8080/api/remove-background
+Content-Type: application/json
+
+{
+  "imageData": "base64-encoded-image",
+  "format": "png"
+}
+```
+
+Response:
+```json
+{
+  "processedImage": "base64-encoded-result",
+  "processingTimeMs": 1234,
+  "error": ""
+}
+```
+
+### Using in the FigIF App
+
+1. Start the HTTP server:
+   ```bash
+   cd backend
+   make run-http
+   ```
+
+2. In the FigIF app, click on "Background Removal" panel
+3. Toggle to "⚡ Backend" mode
+4. The app will automatically detect the backend server and use it for processing
 
 ## Performance Notes
 
