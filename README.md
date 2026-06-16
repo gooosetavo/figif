@@ -2,7 +2,7 @@
 
 A powerful, privacy-focused GIF editor that runs entirely in your browser. No uploads, no backend - all processing happens locally on your machine.
 
-## ✨ Features
+## Features
 
 ### Currently Implemented
 
