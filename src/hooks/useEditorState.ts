@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { CropSelection } from '../components/Panels/CropPanel';
+import type { ProcessingMode } from '../services/grpcClient';
 
 export const useEditorState = () => {
   const [zoom, setZoom] = useState(1);
@@ -16,6 +17,9 @@ export const useEditorState = () => {
   const [isHistoryPanelCollapsed, setIsHistoryPanelCollapsed] = useState(false);
   const [selectedFrames, setSelectedFrames] = useState<Set<number>>(new Set());
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [processingMode, setProcessingMode] = useState<ProcessingMode>('browser');
+  const [isBackendAvailable, setIsBackendAvailable] = useState(false);
+  const [sessionActive, setSessionActive] = useState(false);
 
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.25, 3));
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.25));
@@ -50,6 +54,12 @@ export const useEditorState = () => {
     setSelectedFrames,
     showPreviewModal,
     setShowPreviewModal,
+    processingMode,
+    setProcessingMode,
+    isBackendAvailable,
+    setIsBackendAvailable,
+    sessionActive,
+    setSessionActive,
     handleZoomIn,
     handleZoomOut,
     handleZoomReset,
