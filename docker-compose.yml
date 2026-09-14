@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # HTTP server for frontend (development with live reload)
+  backend-http-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: figif-backend-http-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - backend-go-modules:/go/pkg/mod
+    environment:
+      - AIR_CONFIG=/app/.air.toml
+    command: ["air", "-c", ".air.toml"]
+    profiles:
+      - dev
+      - http-dev
+      - all-dev
+    networks:
+      - figif-network
+    restart: unless-stopped
+
+  # gRPC server (development with live reload)
+  backend-grpc-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: figif-backend-grpc-dev
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./backend:/app
+      - backend-go-modules:/go/pkg/mod
+    environment:
+      - AIR_CONFIG=/app/.air-grpc.toml
+    command: ["air", "-c", ".air-grpc.toml"]
+    profiles:
+      - grpc-dev
+      - all-dev
+    networks:
+      - figif-network
+    restart: unless-stopped
+
+  # HTTP server (production)
+  backend-http:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: figif-backend-http
+    ports:
+      - "8080:8080"
+    command: ["./http-server", "-port=8080"]
+    profiles:
+      - prod
+      - http-prod
+      - all-prod
+    networks:
+      - figif-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # gRPC server (production)
+  backend-grpc:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: figif-backend-grpc
+    ports:
+      - "50051:50051"
+    command: ["./grpc-server", "-port=50051"]
+    profiles:
+      - grpc-prod
+      - all-prod
+    networks:
+      - figif-network
+    restart: unless-stopped
+
+networks:
+  figif-network:
+    driver: bridge
+
+volumes:
+  backend-go-modules:
+    driver: local

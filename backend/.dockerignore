@@ -1,0 +1,39 @@
+# Ignore build artifacts
+bin/
+tmp/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Ignore test files
+*.test
+*.out
+
+# Ignore vendor directory
+vendor/
+
+# Ignore git
+.git/
+.gitignore
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore documentation
+README.md
+*.md
+
+# Ignore logs
+*.log
+
+# Keep generated proto files during build
+!proto/*.pb.go

@@ -4,6 +4,7 @@ import { useBackgroundRemoval, type RemovalMode } from './useBackgroundRemoval';
 import { applyIntensifiesEffect, applyPartyEffect, applyOnDrugsEffect } from '../utils/gifEffects';
 import type { AIBackgroundRemovalConfig } from '../types/gif.types';
 import type { GifEffect } from '../components/Panels/BackgroundRemovalPanel';
+import { backendClient, type SelectionPoint } from '../services/grpcClient';
 
 export const useBackgroundOperations = () => {
   const {
@@ -25,6 +26,8 @@ export const useBackgroundOperations = () => {
     manualTolerance,
     setIsManualSelectionMode,
     setShowPreviewModal,
+    processingMode,
+    isBackendAvailable,
   } = useEditor();
 
   const {
@@ -44,22 +47,22 @@ export const useBackgroundOperations = () => {
 
     try {
       if (target === 'current') {
-        const processedFrame = await removeBackgroundFromFrame(frames[currentFrameIndex], mode, config);
+        const processedFrame = await removeBackgroundFromFrame(frames[currentFrameIndex], mode, config, processingMode);
         const newFrames = [...frames];
         newFrames[currentFrameIndex] = processedFrame;
         setFrames(newFrames);
 
         if (activeWorkspace) {
-          await saveSnapshot(newFrames, currentFrameIndex, `Background removed (${mode})`, true);
+          await saveSnapshot(newFrames, currentFrameIndex, `Background removed (${mode}, ${processingMode})`, true);
         }
       } else {
-        const processedFrames = await removeBackgroundFromFrames(frames, mode, config, (progress) => {
+        const processedFrames = await removeBackgroundFromFrames(frames, mode, config, processingMode, (progress) => {
           console.log(`Processing: ${progress}%`);
         });
         setFrames(processedFrames);
 
         if (activeWorkspace) {
-          await saveSnapshot(processedFrames, currentFrameIndex, `Background removed from all frames (${mode})`, true);
+          await saveSnapshot(processedFrames, currentFrameIndex, `Background removed from all frames (${mode}, ${processingMode})`, true);
         }
       }
       setSelectionMask(null);
@@ -72,7 +75,7 @@ export const useBackgroundOperations = () => {
     if (!frames[currentFrameIndex]) return;
 
     try {
-      const preview = await previewBackgroundRemoval(frames[currentFrameIndex], config);
+      const preview = await previewBackgroundRemoval(frames[currentFrameIndex], config, processingMode);
 
       const canvas = document.createElement('canvas');
       canvas.width = preview.width;
@@ -193,7 +196,40 @@ export const useBackgroundOperations = () => {
     if (!selectionMask || !frames[currentFrameIndex]) return;
 
     try {
-      const processedFrame = applyMask(frames[currentFrameIndex], selectionMask, invert);
+      let processedFrame;
+
+      // Use backend if available and enabled
+      if (processingMode === 'backend' && isBackendAvailable && selectionPoints.length > 0) {
+        const selections: SelectionPoint[] = selectionPoints.map((point) => ({
+          x: point.x,
+          y: point.y,
+          tolerance: point.tolerance,
+        }));
+
+        const processedImageData = await backendClient.manualRemoveBackground(
+          frames[currentFrameIndex].imageData,
+          selections,
+          invert,
+          effect
+        );
+
+        const canvas = document.createElement('canvas');
+        canvas.width = processedImageData.width;
+        canvas.height = processedImageData.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Could not get canvas context');
+        ctx.putImageData(processedImageData, 0, 0);
+
+        processedFrame = {
+          ...frames[currentFrameIndex],
+          imageData: processedImageData,
+          canvas,
+        };
+      } else {
+        // Use browser mode
+        processedFrame = applyMask(frames[currentFrameIndex], selectionMask, invert);
+      }
+
       const newFrames = [...frames];
       newFrames[currentFrameIndex] = processedFrame;
       setFrames(newFrames);
@@ -203,7 +239,7 @@ export const useBackgroundOperations = () => {
         await saveSnapshot(
           newFrames,
           currentFrameIndex,
-          `Applied manual selection (${selectionPoints.length} area${selectionPoints.length !== 1 ? 's' : ''})${
+          `Applied manual selection (${selectionPoints.length} area${selectionPoints.length !== 1 ? 's' : ''}, ${processingMode})${
             effect !== 'none' ? ` + ${effect}` : ''
           }`,
           true
@@ -221,32 +257,68 @@ export const useBackgroundOperations = () => {
     }
 
     try {
-      let processedFrames = frames.map((frame) => {
-        let combinedMask: Uint8ClampedArray | null = null;
+      let processedFrames;
 
-        for (const point of selectionPoints) {
-          const mask = selectWithMagicWand(frame.imageData, point.x, point.y, point.tolerance);
-          if (combinedMask) {
-            const combined = new Uint8ClampedArray(mask.length);
-            for (let i = 0; i < mask.length; i++) {
-              combined[i] = combinedMask[i] === 255 || mask[i] === 255 ? 255 : 0;
+      // Use backend if available and enabled
+      if (processingMode === 'backend' && isBackendAvailable) {
+        const selections: SelectionPoint[] = selectionPoints.map((point) => ({
+          x: point.x,
+          y: point.y,
+          tolerance: point.tolerance,
+        }));
+
+        processedFrames = await Promise.all(
+          frames.map(async (frame) => {
+            const processedImageData = await backendClient.manualRemoveBackground(
+              frame.imageData,
+              selections,
+              invert,
+              effect
+            );
+
+            const canvas = document.createElement('canvas');
+            canvas.width = processedImageData.width;
+            canvas.height = processedImageData.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Could not get canvas context');
+            ctx.putImageData(processedImageData, 0, 0);
+
+            return {
+              ...frame,
+              imageData: processedImageData,
+              canvas,
+            };
+          })
+        );
+      } else {
+        // Use browser mode
+        processedFrames = frames.map((frame) => {
+          let combinedMask: Uint8ClampedArray | null = null;
+
+          for (const point of selectionPoints) {
+            const mask = selectWithMagicWand(frame.imageData, point.x, point.y, point.tolerance);
+            if (combinedMask) {
+              const combined = new Uint8ClampedArray(mask.length);
+              for (let i = 0; i < mask.length; i++) {
+                combined[i] = combinedMask[i] === 255 || mask[i] === 255 ? 255 : 0;
+              }
+              combinedMask = combined;
+            } else {
+              combinedMask = mask;
             }
-            combinedMask = combined;
-          } else {
-            combinedMask = mask;
           }
+
+          return combinedMask ? applyMask(frame, combinedMask, invert) : frame;
+        });
+
+        // Apply effects if selected (browser mode only, backend handles effects)
+        if (effect === 'intensifies') {
+          processedFrames = applyIntensifiesEffect(processedFrames);
+        } else if (effect === 'party') {
+          processedFrames = applyPartyEffect(processedFrames);
+        } else if (effect === 'on-drugs') {
+          processedFrames = applyOnDrugsEffect(processedFrames);
         }
-
-        return combinedMask ? applyMask(frame, combinedMask, invert) : frame;
-      });
-
-      // Apply effects if selected
-      if (effect === 'intensifies') {
-        processedFrames = applyIntensifiesEffect(processedFrames);
-      } else if (effect === 'party') {
-        processedFrames = applyPartyEffect(processedFrames);
-      } else if (effect === 'on-drugs') {
-        processedFrames = applyOnDrugsEffect(processedFrames);
       }
 
       setFrames(processedFrames);
@@ -258,7 +330,7 @@ export const useBackgroundOperations = () => {
           currentFrameIndex,
           `Applied manual selection to all frames (${selectionPoints.length} area${
             selectionPoints.length !== 1 ? 's' : ''
-          })${effect !== 'none' ? ` + ${effect}` : ''}`,
+          }, ${processingMode})${effect !== 'none' ? ` + ${effect}` : ''}`,
           true
         );
       }

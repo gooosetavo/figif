@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { RemovalMode } from '../../hooks/useBackgroundRemoval';
 import type { AIBackgroundRemovalConfig, AIModel, AIDevice, GifFrame } from '../../types/gif.types';
 import { getModelInfo } from '../../utils/backgroundRemoval';
+import { useEditor } from '../../contexts/EditorContext';
+import { backendClient } from '../../services/grpcClient';
 import './BackgroundRemovalPanel.css';
 
 export type GifEffect = 'none' | 'intensifies' | 'party' | 'on-drugs';
@@ -43,6 +45,7 @@ export function BackgroundRemovalPanel({
   aiProgress,
   currentFrame,
 }: BackgroundRemovalPanelProps) {
+  const { processingMode, isBackendAvailable, setIsBackendAvailable } = useEditor();
   const [mode, setMode] = useState<RemovalMode>('ai');
   const [invertSelection, setInvertSelection] = useState(false);
   const [useReapplyMode, setUseReapplyMode] = useState(true);
@@ -54,6 +57,15 @@ export function BackgroundRemovalPanel({
   const [showModelInfo, setShowModelInfo] = useState(false);
 
   const modelInfo = getModelInfo(selectedModel);
+
+  // Check backend availability on mount
+  useEffect(() => {
+    const checkBackend = async () => {
+      const available = await backendClient.isAvailable();
+      setIsBackendAvailable(available);
+    };
+    checkBackend();
+  }, [setIsBackendAvailable]);
 
   const aiConfig: AIBackgroundRemovalConfig = {
     model: selectedModel,
@@ -85,11 +97,22 @@ export function BackgroundRemovalPanel({
       {mode === 'ai' ? (
         <div className="ai-mode">
           <p className="mode-description">
-            Uses an in-browser model to automatically detect and remove backgrounds. Works best with photos and clear subjects.
+            Uses AI to automatically detect and remove backgrounds. Works best with photos and clear subjects.
+            {processingMode === 'backend' && isBackendAvailable && (
+              <span style={{ display: 'block', marginTop: '8px', fontSize: '12px', color: '#667eea' }}>
+                ⚡ Using backend server for processing
+              </span>
+            )}
+            {processingMode === 'backend' && !isBackendAvailable && (
+              <span style={{ display: 'block', marginTop: '8px', fontSize: '12px', color: '#e53e3e' }}>
+                ⚠️ Backend mode enabled but server offline - using browser mode
+              </span>
+            )}
           </p>
 
-          {/* AI Model Configuration */}
-          <div className="ai-config-section">
+          {/* AI Model Configuration - Only for browser mode */}
+          {processingMode === 'browser' && (
+            <div className="ai-config-section">
             <div className="control-item">
               <div className="control-header">
                 <label htmlFor="model-quality-select">Model Quality</label>
@@ -150,6 +173,7 @@ export function BackgroundRemovalPanel({
               </select>
             </div>
           </div>
+          )}
 
           {/* Preview Button */}
           <div className="button-group-vertical">
